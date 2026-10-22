@@ -11,67 +11,84 @@
     { id: 'milk', label: 'Milk' },
     { id: 'syrup', label: 'Syrup' },
     { id: 'topping', label: 'Topping' },
+    { id: 'treat', label: 'Treat', optional: true },  // only when the order includes one
     { id: 'pour', label: 'Pour' },
   ];
 
+  // `art` names an image in assets/items/. Colours tint the cup while pouring.
   const ingredients = {
     cup: [
-      { id: 'mug', name: 'Mug' },
-      { id: 'glass', name: 'Tall Glass' },
-      { id: 'teacup', name: 'Teacup' },
+      { id: 'mug', name: 'Mug', art: 'cup-mug' },
+      { id: 'glass', name: 'Tall Glass', art: 'cup-glass' },
+      { id: 'teacup', name: 'Teacup', art: 'cup-teacup' },
     ],
     base: [
-      { id: 'espresso', name: 'Espresso', color: '#6b3a2a' },
-      { id: 'darkroast', name: 'Dark Roast', color: '#2c1914' },
-      { id: 'earlgrey', name: 'Earl Grey', color: '#b8743f' },
-      { id: 'matcha', name: 'Matcha', color: '#86b763' },
+      { id: 'espresso', name: 'Espresso', color: '#6b3a2a', art: 'base-espresso' },
+      { id: 'matcha', name: 'Matcha', color: '#86b763', art: 'base-matcha' },
     ],
     milk: [
       { id: 'none', name: 'No Milk', color: null },
-      { id: 'oat', name: 'Oat Milk', color: '#efdcbc' },
-      { id: 'whole', name: 'Whole Milk', color: '#fffaf2' },
+      { id: 'whole', name: 'Whole Milk', color: '#fffaf2', art: 'milk-whole' },
+      { id: 'oat', name: 'Oat Milk', color: '#efdcbc', art: 'milk-oat' },
     ],
     syrup: [
       { id: 'none', name: 'No Syrup', color: null },
-      { id: 'vanilla', name: 'Vanilla', color: '#f3d98f' },
-      { id: 'strawberry', name: 'Strawberry', color: '#ee6f8c' },
-      { id: 'lavender', name: 'Lavender', color: '#b09ae0' },
+      { id: 'lavender', name: 'Lavender', color: '#b09ae0', art: 'syrup-lavender' },
+      { id: 'strawberry', name: 'Strawberry', color: '#ee6f8c', art: 'syrup-strawberry' },
+      { id: 'chocolate', name: 'Chocolate', color: '#4a2a1c', art: 'syrup-chocolate' },
     ],
     topping: [
       { id: 'none', name: 'Nothing', color: null },
-      { id: 'cream', name: 'Whipped Cream', color: '#fffdf8' },
-      { id: 'cinnamon', name: 'Cinnamon', color: '#9a5a2e' },
-      { id: 'sprinkles', name: 'Heart Sprinkles', color: '#f0587a' },
+      { id: 'cream', name: 'Whipped Cream', art: 'top-cream' },
+      { id: 'cinnamon', name: 'Cinnamon', art: 'top-cinnamon' },
+      { id: 'strawberries', name: 'Strawberries', art: 'top-strawberries' },
+      { id: 'lavender', name: 'Lavender Sprig', art: 'top-lavender' },
+      { id: 'ice', name: 'Ice', art: 'top-ice' },
     ],
   };
 
   /* ---------- Recipes ---------- */
   const recipes = [
     {
-      id: 'oat_latte', name: 'Oat Milk Latte', price: 12, hot: true,
+      id: 'heart_latte', name: 'Heart Latte', price: 12, art: 'drink-heart-latte',
       cup: 'mug', base: 'espresso', milk: 'oat', syrup: 'none', topping: 'cinnamon',
-      blurb: 'Mellow espresso, toasty oat milk, a dusting of cinnamon.',
+      blurb: 'Mellow espresso, toasty oat milk, latte-art heart and a dusting of cinnamon.',
     },
     {
-      id: 'midnight', name: 'Midnight Double', price: 11, hot: true,
-      cup: 'mug', base: 'darkroast', milk: 'none', syrup: 'none', topping: 'none',
-      blurb: 'Dark roast, nothing else. Strong enough to have opinions.',
+      id: 'midnight', name: 'Midnight Espresso', price: 10, art: 'drink-espresso',
+      cup: 'mug', base: 'espresso', milk: 'none', syrup: 'none', topping: 'none',
+      blurb: 'Espresso, nothing else. Strong enough to have opinions.',
     },
     {
-      id: 'strawberry_cloud', name: 'Strawberry Cloud', price: 14, hot: false,
-      cup: 'glass', base: 'espresso', milk: 'whole', syrup: 'strawberry', topping: 'cream',
-      blurb: 'Pink layers, a shot of espresso and a pillow of cream.',
+      id: 'strawberry_matcha', name: 'Strawberry Matcha', price: 15, art: 'drink-strawberry-matcha',
+      cup: 'glass', base: 'matcha', milk: 'oat', syrup: 'strawberry', topping: 'strawberries',
+      blurb: 'Pink strawberry milk under bright matcha, crowned with fresh berries.',
     },
     {
-      id: 'lavender_fog', name: 'Lavender Fog', price: 13, hot: true,
-      cup: 'teacup', base: 'earlgrey', milk: 'whole', syrup: 'lavender', topping: 'none',
-      blurb: 'Earl Grey with steamed milk and a floral sweetness.',
+      id: 'lavender_latte', name: 'Lavender Latte', price: 14, art: 'drink-lavender-latte',
+      cup: 'teacup', base: 'espresso', milk: 'whole', syrup: 'lavender', topping: 'lavender',
+      blurb: 'Floral and soft, finished with a sprig of lavender.',
     },
     {
-      id: 'blossom_matcha', name: 'Blossom Matcha', price: 15, hot: false,
-      cup: 'glass', base: 'matcha', milk: 'oat', syrup: 'vanilla', topping: 'sprinkles',
-      blurb: 'Matcha over vanilla oat milk, finished with heart sprinkles.',
+      id: 'matcha_latte', name: 'Matcha Latte', price: 12, art: 'drink-matcha-latte',
+      cup: 'mug', base: 'matcha', milk: 'whole', syrup: 'none', topping: 'none',
+      blurb: 'Whisked matcha and steamed milk with a leaf of latte art.',
     },
+    {
+      id: 'iced_mocha', name: 'Iced Mocha', price: 13, art: 'drink-iced-latte',
+      cup: 'glass', base: 'espresso', milk: 'whole', syrup: 'chocolate', topping: 'ice',
+      blurb: 'Espresso and chocolate over cold milk and plenty of ice.',
+    },
+  ];
+
+  /* ---------- Treats (sold once the Cake Case is placed) ---------- */
+  const treats = [
+    { id: 'croissant', name: 'Croissant', price: 6, art: 'treat-croissant' },
+    { id: 'cake', name: 'Strawberry Shortcake', price: 8, art: 'treat-cake' },
+    { id: 'paw_cookie', name: 'Paw Cookie', price: 5, art: 'treat-paw-cookie' },
+    { id: 'cinnamon_roll', name: 'Cinnamon Roll', price: 7, art: 'treat-cinnamon-roll' },
+    { id: 'macarons', name: 'Lavender Macarons', price: 7, art: 'treat-macarons' },
+    { id: 'muffin', name: 'Chocolate Muffin', price: 6, art: 'treat-muffin' },
   ];
 
   /* ---------- Affection tiers ---------- */
@@ -90,8 +107,8 @@
       id: 'milo', name: 'Milo', age: 24, title: 'The Shy Sketcher',
       role: 'Morning barista', color: '#f6cdd3',
       personality: 'Gentle, soft-spoken and observant. Hides in oversized cardigans, blushes easily, apologizes too much, and notices everything.',
-      likes: 'Sketchbooks, rainy windows, oat milk lattes',
-      favorite: 'oat_latte',
+      likes: 'Sketchbooks, rainy windows, latte-art hearts',
+      favorite: 'heart_latte', treat: 'croissant',
       unlockHint: 'Already works at the café.',
       unlock: { type: 'intro' },
       lines: {
@@ -99,7 +116,7 @@
         again: 'Me again. I, um, want to try something new. For science. For art.',
         greet: ['Morning! I mean, hi. It\'s afternoon. Hi.', 'Is it okay if I sit by the window again?', 'I drew the latte art queue. Want to see later?'],
         order: 'Could I get an {drink}, please? Only if it\'s not too much trouble.',
-        happy: ['This tastes like a warm blanket. Thank you.', 'Oh, I like this. I might have a new favorite. Don\'t tell my oat latte.'],
+        happy: ['This tastes like a warm blanket. Thank you.', 'Oh, I like this. I might have a new favorite. Don\'t tell my heart latte.'],
         wrong: ['Oh, that\'s okay! It\'s… different. I\'ll still drink it.', 'It\'s fine, really! I\'ll sketch it instead.'],
         favHappy: ['It\'s perfect. You remembered the cinnamon.'],
         favWrong: ['It\'s fine, really! ...Was there cinnamon?'],
@@ -111,7 +128,7 @@
       role: 'Night-owl musician', color: '#b993b4',
       personality: 'Dry humor, a magenta streak, a choker and too many buckles. Pretends not to care, then remembers your birthday.',
       likes: 'Vinyl, fire escapes, coffee strong enough to stand a spoon in',
-      favorite: 'midnight',
+      favorite: 'midnight', treat: 'muffin',
       unlockHint: 'Drops by on your first day.',
       unlock: { type: 'visit' },
       lines: {
@@ -131,17 +148,17 @@
       role: 'Moving-company muscle, secret baker', color: '#eab48f',
       personality: 'Huge, warm and earnest. Looks like he could bench-press the counter. Gets flustered by compliments.',
       likes: 'Sweet drinks, frosting roses, being helpful',
-      favorite: 'strawberry_cloud',
+      favorite: 'strawberry_matcha', treat: 'cake',
       unlockHint: 'Drops by on your first day.',
       unlock: { type: 'visit' },
       lines: {
         meet: 'Hi! Sorry, I know I\'m blocking the doorway. I always am. Is the pink drink still on the menu?',
         again: 'Round two! Can I try something different this time?',
         greet: ['Boss! Hi! I carried your delivery in, hope that\'s okay.', 'I did leg day. I deserve something pink.', 'Your plant looks happy. I talked to it.'],
-        order: 'Could I please have a {drink}? Extra cloud if that\'s allowed!',
+        order: 'Could I please have a {drink}? Extra strawberries if that\'s allowed!',
         happy: ['It\'s so pretty I don\'t want to drink it! ...I\'m drinking it.', 'Best. Day. Ever. Thank you!'],
         wrong: ['No problem at all! Everyone makes mistakes!', 'It\'s… a surprise! I love surprises. Mostly.'],
-        favHappy: ['Pink! Cloud! Perfect! I\'m so happy right now!'],
+        favHappy: ['Pink! Berries! Perfect! I\'m so happy right now!'],
         favWrong: ['Oh! It\'s, um, very brown. That\'s okay! I\'ll be brave.'],
         gallery: ['I can lift a piano, but I can\'t lift my eyes when you smile at me. Wait. Did I say that out loud?', 'Frosting roses are all in the wrist.'],
       },
@@ -150,8 +167,8 @@
       id: 'lumi', name: 'Lumi', age: 25, title: 'The Runway Darling',
       role: 'Fashion stylist and trendsetter', color: '#dccdf0',
       personality: 'Confident, glamorous and teasing, with a soft heart under the lip gloss. Notices good taste immediately.',
-      likes: 'Ribbons, window displays, matcha with heart sprinkles',
-      favorite: 'blossom_matcha',
+      likes: 'Ribbons, window displays, anything lavender',
+      favorite: 'lavender_latte', treat: 'macarons',
       unlockHint: 'Only visits stylish cafés. Own 2 décor items.',
       unlock: { type: 'decor', count: 2 },
       lines: {
@@ -161,8 +178,8 @@
         order: 'One {drink}, darling. Make it photogenic.',
         happy: ['Gorgeous. Ten out of ten, no notes.', 'This is going on my feed. You\'re going on my feed.'],
         wrong: ['Hm. Avant-garde. Not what I ordered, but avant-garde.', 'We\'ll call this one a rough draft, darling.'],
-        favHappy: ['The sprinkles! You remembered. I could kiss this cup.'],
-        favWrong: ['Darling, where are my hearts? The sprinkles are the whole point.'],
+        favHappy: ['The lavender sprig! You remembered. I could kiss this cup.'],
+        favWrong: ['Darling, where\'s my lavender? It\'s the whole point.'],
         gallery: ['Fashion is a love letter you wear.', 'I always fix my hair before I come in. You noticed? Good.'],
       },
     },
@@ -202,13 +219,67 @@
     },
   };
 
+  /* ---------- Regulars (neighborhood customers; not romanceable) ----------
+   * Art: assets/characters/<id>/full.webp and bust-<expression>.webp. */
+  const regulars = [
+    {
+      id: 'posy', name: 'Posy', blurb: 'Florist from next door. Always smells faintly of roses.',
+      expressions: ['neutral', 'happy', 'content'], favorite: 'lavender_latte', treat: 'macarons',
+      lines: { greet: ['I brought you a sprig from the shop. It matches the cups!', 'Good morning! Busy day of bouquets ahead.'] },
+    },
+    {
+      id: 'theo', name: 'Theo', blurb: 'Grad student. Carries three books and reads none of them here.',
+      expressions: ['neutral', 'happy', 'content'], favorite: 'iced_mocha', treat: 'muffin',
+      lines: { greet: ['Thesis day. I need caffeine and moral support.', 'Hey! Mind if I camp out by the window for an hour? Or four?'] },
+    },
+    {
+      id: 'hana', name: 'Hana', blurb: 'Photographer. Has a picture of every drink you have ever made.',
+      expressions: ['neutral', 'happy', 'content'], favorite: 'strawberry_matcha', treat: 'cake',
+      lines: { greet: ['The light in here is unreal right now. Don\'t move.', 'Hi! I\'m back for the pretty drinks. And the coffee.'] },
+    },
+    {
+      id: 'fennick', name: 'Fennick', blurb: 'The oldest regular. Knew your aunt for forty years.',
+      expressions: ['neutral', 'happy', 'content'], favorite: 'matcha_latte', treat: 'croissant',
+      lines: { greet: ['Your aunt would be proud. She made my tea the same way every morning.', 'Ah, the new owner! I\'ve been coming here since before you were born.'] },
+    },
+    {
+      id: 'amira', name: 'Amira', blurb: 'Illustrator. Sketches the café in soft greens and pinks.',
+      expressions: ['neutral', 'happy', 'sad'], favorite: 'lavender_latte', treat: 'paw_cookie',
+      lines: { greet: ['Hello! I\'m drawing your window display today.', 'This café is my favorite place to work. Don\'t tell my studio.'] },
+    },
+    {
+      id: 'kofi', name: 'Kofi', blurb: 'Bike courier. Here between deliveries, always in a good mood.',
+      expressions: ['neutral', 'happy', 'sad'], favorite: 'iced_mocha', treat: 'cinnamon_roll',
+      lines: { greet: ['Ten minutes till my next drop-off. Make it count!', 'Hey, boss! Riding past made me thirsty.'] },
+    },
+    {
+      id: 'clem', name: 'Clem', blurb: 'Sunny, chatty, and on a mission to try everything on the menu.',
+      expressions: ['neutral', 'happy', 'sad'], favorite: 'heart_latte', treat: 'cake',
+      lines: { greet: ['Hi hi! What haven\'t I tried yet?', 'I told all my friends about this place. Brace yourself.'] },
+    },
+    {
+      id: 'sky', name: 'Sky', blurb: 'Web designer with a laptop full of stickers and a deadline.',
+      expressions: ['neutral', 'happy', 'sad'], favorite: 'midnight', treat: 'paw_cookie',
+      lines: { greet: ['Deadline in two hours. Coffee first, panic later.', 'Your Wi-Fi password is a cat pun. I respect it.'] },
+    },
+  ];
+  const regularLines = {
+    order: 'Could I get a {drink}, please?',
+    orderTreat: 'Could I get a {drink} and a {treat}, please?',
+    happy: ['Perfect! Thank you!', 'Oh, that\'s lovely. I\'ll be back tomorrow.', 'Exactly right. You\'re good at this!'],
+    wrong: ['Hmm, not quite what I asked for. That\'s okay.', 'That\'s… a different drink. Oh well!'],
+  };
+
   /* ---------- Décor upgrades ---------- */
+  // `art` is in assets/props/. `layer` is 'back' (behind the counter) or 'front'
+  // (on or in front of it); `spot` is a class in style.css that positions it.
   const decor = [
-    { id: 'plant', name: 'Potted Monstera', price: 40, bonus: 0.05, desc: 'A big leafy friend by the window. Customers relax.' },
-    { id: 'chairs', name: 'Pastel Chairs', price: 60, bonus: 0.08, desc: 'Mint and pink seats with a tiny round table.' },
-    { id: 'lights', name: 'Fairy Lights', price: 90, bonus: 0.1, desc: 'Twinkling strings across the window and ceiling.' },
-    { id: 'neon', name: 'Neon Heart Sign', price: 110, bonus: 0.1, desc: 'A soft pink glow that says "open, and in love".' },
-    { id: 'tower', name: 'Cat Tower', price: 150, bonus: 0.12, desc: 'A plush tower for Biscuit, the café\'s resident cat.' },
+    { id: 'tipjar', name: 'Tip Jar', price: 40, bonus: 0.06, art: 'tip-jar', layer: 'front', spot: 'spot-tipjar', desc: 'A ribboned jar by the bell. People tip more when they can see the hearts.' },
+    { id: 'flowers', name: 'Flower Pot', price: 60, bonus: 0.06, art: 'flower-pot', layer: 'front', spot: 'spot-flowers', desc: 'Pink blooms in a paw-print pot, right on the counter.' },
+    { id: 'plant', name: 'Potted Monstera', price: 70, bonus: 0.08, art: 'monstera', layer: 'front', spot: 'spot-plant', desc: 'A big leafy friend by the counter. Customers relax.' },
+    { id: 'lamp', name: 'Pendant Lamp', price: 90, bonus: 0.08, art: 'pendant-lamp', layer: 'back', spot: 'spot-lamp', desc: 'A petal-glass lamp that makes every latte look golden.' },
+    { id: 'cakecase', name: 'Cake Case', price: 110, bonus: 0.04, art: 'cake-case', layer: 'front', spot: 'spot-cakecase', treats: true, desc: 'Lets you sell treats. Customers start adding pastries to their orders.' },
+    { id: 'tower', name: 'Cat Tower', price: 150, bonus: 0.12, art: 'cat-tower', layer: 'back', spot: 'spot-tower', desc: 'A plush lavender tower for Biscuit, the café\'s resident cat.' },
   ];
 
   /* ---------- Story scenes ----------
@@ -221,7 +292,7 @@
         start: { who: 'narr', text: 'A brass key, a recipe box, and a note in your aunt\'s looping handwriting: "The Velvet Paw is yours now. Be kind to the regulars. They\'re softer than they look."', next: 'n2' },
         n2: { who: 'narr', text: 'The café smells like cinnamon and old wood. Sunlight spills over mismatched cups and a very sleepy espresso machine.', next: 'n3' },
         n3: { who: 'milo', expr: 'flustered', text: 'Oh! You must be {name}, the new owner. I\'m Milo. I open the café most mornings. Sorry, I\'m not great at first impressions.', next: 'n4' },
-        n4: { who: 'milo', expr: 'neutral', text: 'Every order comes with a ticket. Pick the cup, the base, milk, syrup and topping. The recipe is written right on it.', next: 'n5' },
+        n4: { who: 'milo', expr: 'neutral', text: 'Every order comes with a ticket. Pick the cup, the base, milk, syrup and topping. The recipe is written right on it, and if they want a treat, grab that from the case too.', next: 'n5' },
         n5: { who: 'milo', expr: 'happy', text: 'Then hold to pour and let go inside the pink band. Customers notice a perfect pour. They tip for it, too.', next: 'c1' },
         c1: {
           who: 'milo', expr: 'blush', text: 'Um. Any questions, boss?',
@@ -241,7 +312,7 @@
     milo_1: {
       title: 'Sketches After Closing', char: 'milo', bg: 'cafe-night',
       nodes: {
-        start: { who: 'narr', expr: 'neutral', text: 'After closing, you find Milo at the corner table, bent over a sketchbook. Pencil shavings, an empty oat latte cup.', next: 'n2' },
+        start: { who: 'narr', expr: 'neutral', text: 'After closing, you find Milo at the corner table, bent over a sketchbook. Pencil shavings, an empty pink mug.', next: 'n2' },
         n2: { who: 'milo', expr: 'surprised', text: 'Ah! I didn\'t hear you. I was just… it\'s nothing. Doodles.', next: 'c1' },
         c1: {
           who: 'narr', expr: 'blush', text: 'He hugs the sketchbook to his chest. His tail curls around the chair leg.',
@@ -384,7 +455,7 @@
         a1: { who: 'atlas', expr: 'happy', text: 'Anytime! I like being useful.', next: 'n3' },
         b1: { who: 'atlas', expr: 'flustered', text: 'I- it\'s just flour! It\'s not that impressive! …Is it impressive?', next: 'n3' },
         c1r: { who: 'atlas', expr: 'blush', text: 'I wanted to. People usually think I\'m here to fix the shelves, not to drink pink lattes.', next: 'n3' },
-        n3: { who: 'narr', expr: 'happy', text: 'Afterward he sits on an upturned crate, sipping the last Strawberry Cloud of the night with visible joy.', next: 'n4' },
+        n3: { who: 'narr', expr: 'happy', text: 'Afterward he sits on an upturned crate, sipping the last Strawberry Matcha of the night with visible joy.', next: 'n4' },
         n4: { who: 'atlas', expr: 'blush', text: 'Can I tell you something embarrassing? I bake. Little cakes. With frosting flowers.', next: 'c2' },
         c2: {
           who: 'narr', expr: 'flustered', text: 'His ears go flat, waiting for you to laugh.',
@@ -435,7 +506,7 @@
     },
 
     lumi_1: {
-      title: 'Window Display', char: 'lumi', bg: 'dusk',
+      title: 'Window Display', char: 'lumi', bg: 'storefront',
       nodes: {
         start: { who: 'narr', expr: 'neutral', text: 'Your newest regular, Lumi, has been studying your front window for ten minutes, tapping a pen against glossy lips.', next: 'n2' },
         n2: { who: 'lumi', expr: 'smirk', text: 'Darling, the café is lovely, but this window is begging for a theme. May I?', next: 'c1' },
@@ -541,14 +612,14 @@
   /* First day is hand-authored so every player meets the core cast.
    * `again` marks a return visit: the character comes back to try something new. */
   const firstShift = [
-    { who: 'atlas', drink: 'strawberry_cloud' },
-    { who: 'milo', drink: 'oat_latte' },
+    { who: 'fennick', drink: 'matcha_latte' },
+    { who: 'atlas', drink: 'strawberry_matcha' },
+    { who: 'milo', drink: 'heart_latte' },
     { who: 'riven', drink: 'midnight' },
-    { who: 'milo', drink: 'lavender_fog', again: true },
   ];
 
   window.GAME_DATA = {
-    steps, ingredients, recipes, tiers, characters, expressions, player, decor, scenes, routes, firstShift,
+    steps, ingredients, recipes, treats, tiers, characters, expressions, player, regulars, regularLines, decor, scenes, routes, firstShift,
     economy: { startCoins: 30, patienceSeconds: 45, pourRate: 0.62 },
   };
 })();

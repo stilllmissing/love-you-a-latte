@@ -11,9 +11,17 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const charById = Object.fromEntries(D.characters.map((c) => [c.id, c]));
+  const regById = Object.fromEntries(D.regulars.map((r) => [r.id, r]));
+  const treatById = Object.fromEntries(D.treats.map((t) => [t.id, t]));
+  const isCast = (id) => !!charById[id];
+  const person = (id) => charById[id] || regById[id];
+  const itemSrc = (art) => `assets/items/${art}.webp`;
+  const propSrc = (art) => `assets/props/${art}.webp`;
+  const sceneSrc = (name) => `assets/scenes/${name}.webp`;
+  const itemImg = (art, cls = '') => (art ? `<img class="item ${cls}" src="${itemSrc(art)}" alt="" draggable="false">` : '');
   const recipeById = Object.fromEntries(D.recipes.map((r) => [r.id, r]));
   const decorById = Object.fromEntries(D.decor.map((d) => [d.id, d]));
-  const ingName = (step, id) => (D.ingredients[step].find((i) => i.id === id) || {}).name || '—';
+  const ingName = (step, id) => (step === 'treat' ? (treatById[id] || {}).name : (D.ingredients[step].find((i) => i.id === id) || {}).name) || '—';
   const RECIPE_KEYS = ['cup', 'base', 'milk', 'syrup', 'topping'];
 
   /* ---------- Save data ---------- */
@@ -33,13 +41,13 @@
   let save = store.get(SAVE_KEY);
   if (!save || save.v !== 1) save = null;
   if (save && save.phase === 'shift') save.phase = 'hub'; // an interrupted shift resumes from the closed café
+  if (save) save.decor = save.decor.filter((id) => D.decor.some((d) => d.id === id)); // décor from older versions
   const settings = Object.assign({ sound: true, textSpeed: 'normal', reduceMotion: false }, store.get(SET_KEY) || {});
   const persist = () => { if (save) store.set(SAVE_KEY, save); };
   const persistSettings = () => store.set(SET_KEY, settings);
 
   /* ---------- Runtime state ---------- */
   const G = { screen: 'title', returnTo: 'title', phase: 'hub', shift: null, drink: null, dlg: null, modal: null };
-  const scene = new window.Cafe.Scene($('#cafe-bg'), $('#cafe-fg'));
 
   /* ---------- Relationship helpers ---------- */
   const aff = (id) => (save && save.affection[id]) || 0;
@@ -67,20 +75,28 @@
     toast(`New character unlocked: <b>${charById[id].name}</b>`, 'unlock');
   }
 
-  /* Cast art lives in assets/characters/<id>/: a large bust and full body, eight
-   * bust and eight chibi expressions, and an eight-frame turnaround. */
+  /* Character art lives in assets/characters/<id>/. Cast: a large bust and full body,
+   * eight bust and eight chibi expressions, an eight-frame turnaround. Regulars: full
+   * body and three bust expressions (closest match is used for the rest). */
   const artSrc = (id, file) => `assets/characters/${id}/${file}.webp`;
-  const artFile = (kind, expr) => (kind === 'chibi' || kind === 'talk'
-    ? `${kind === 'talk' ? 'bust' : 'chibi'}-${D.expressions.includes(expr) ? expr : 'neutral'}`
+  // 'talk' and 'counter' use the expression busts, 'chibi' the chibi expressions
+  const artFile = (kind, expr) => (kind === 'chibi' || kind === 'talk' || kind === 'counter'
+    ? `${kind === 'chibi' ? 'chibi' : 'bust'}-${D.expressions.includes(expr) ? expr : 'neutral'}`
     : kind);
+  const REGULAR_FALLBACK = { happy: ['happy'], blush: ['happy', 'content'], smirk: ['happy'], flustered: ['happy'], surprised: ['happy'], sad: ['sad', 'neutral'], pensive: ['content', 'neutral'] };
   function portrait(who, { kind = 'bust', expr = 'neutral', locked = false } = {}) {
-    return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, artFile(kind, expr))}" alt="" draggable="false">`;
+    let file;
+    if (regById[who]) {
+      const has = regById[who].expressions;
+      file = kind === 'full' ? 'full' : `bust-${[...(REGULAR_FALLBACK[expr] || []), 'neutral'].find((e) => has.includes(e))}`;
+    } else file = artFile(kind, expr);
+    return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, file)}" alt="" draggable="false">`;
   }
   /* Chibi faces are small at café size, so reactions there also get an emote. */
   const EMOTES = { happy: '♪', blush: '♡', flustered: '!!', surprised: '!', sad: '…', smirk: '✧' };
   const emote = (expr) => (EMOTES[expr] ? `<span class="emote emote-${expr}" aria-hidden="true">${EMOTES[expr]}</span>` : '');
   function posed(who, kind, expr) {
-    return `<div class="pose expr-${expr}">${portrait(who, { kind, expr })}${kind === 'chibi' ? emote(expr) : ''}</div>`;
+    return `<div class="pose expr-${expr}">${portrait(who, { kind, expr })}${kind === 'chibi' || kind === 'counter' ? emote(expr) : ''}</div>`;
   }
   /* ---------- The protagonist ---------- */
   const lookById = Object.fromEntries(D.player.looks.map((l) => [l.id, l]));
@@ -95,13 +111,18 @@
     return `<img class="art art-player" src="${artSrc(look.id, `bust-${playerExpr(look, expr)}`)}" alt="" draggable="false">`;
   }
 
-  function preload(id, files) { if (charById[id]) files.forEach((f) => { new Image().src = artSrc(id, f); }); }
-  const WALK_FRAME = 'turn-6';   // side view facing left: customers enter from the right and leave to the left
-  function showWalking(el, who) {
-    const img = el && el.querySelector('.art');
-    if (img && charById[who]) { img.src = artSrc(who, WALK_FRAME); el.querySelectorAll('.emote').forEach((e) => e.remove()); }
+  function preload(id, files) { files.forEach((f) => { new Image().src = artSrc(id, f); }); }
+  const whoName = (who) => person(who).name;
+
+  /* ---------- Café scene: your interior, counter and décor ---------- */
+  function renderDecor() {
+    const owned = save ? save.decor.map((id) => decorById[id]) : [];
+    ['back', 'front'].forEach((layer) => {
+      $(`#decor-${layer}`).innerHTML = owned.filter((d) => d.layer === layer)
+        .map((d) => `<img class="prop ${d.spot}" src="${propSrc(d.art)}" alt="" draggable="false">`).join('');
+    });
   }
-  const whoName = (who) => charById[who].name;
+  const sellsTreats = () => !!(save && save.decor.some((id) => decorById[id].treats));
 
   /* ---------- Screens ---------- */
   function show(name) {
@@ -109,7 +130,6 @@
     $$('.screen').forEach((s) => s.classList.toggle('active', s.id === 'screen-' + name));
     G.screen = name;
     document.body.dataset.screen = name;
-    if (name === 'cafe') scene.start(); else scene.stop();
     const el = $('#screen-' + name);
     el.scrollTop = 0;
     const f = el.querySelector('[data-autofocus]') || el.querySelector('.btn-primary:not([disabled])');
@@ -186,25 +206,29 @@
 
   /* ---------- Café: shift flow ---------- */
   function buildShift() {
-    if (save.day === 1) return D.firstShift.map((x) => Object.assign({}, x));
+    const withTreat = (c) => {
+      if (sellsTreats() && !c.treat && Math.random() < 0.5) {
+        c.treat = Math.random() < 0.7 ? person(c.who).treat : pick(D.treats).id;
+      }
+      return c;
+    };
+    if (save.day === 1) return D.firstShift.map((x) => withTreat(Object.assign({}, x)));
     // Everyone you've met drops by (plus a newcomer the café has unlocked), mostly
-    // for their favorite. Short shifts fill up with return visits for something new.
+    // for their favorite; regulars from the neighborhood fill the rest of the day.
     const n = 4 + Math.min(2, Math.floor((save.day - 1) / 2));
     const cast = D.characters.filter((c) => isMet(c.id)).map((c) => c.id);
     D.characters.forEach((c) => {
       if (!isMet(c.id) && c.unlock.type === 'decor' && save.decor.length >= c.unlock.count) cast.push(c.id);
     });
-    const first = shuffle(cast.filter(isMet)).concat(cast.filter((id) => !isMet(id)));
-    const list = first.map((id) => ({ who: id, drink: Math.random() < 0.75 ? charById[id].favorite : pick(D.recipes).id }));
-    const visitors = shuffle(cast.slice());
-    while (list.length < n && visitors.length) {
-      const id = visitors.pop();
-      const tried = list.filter((c) => c.who === id).map((c) => c.drink);
-      list.push({ who: id, again: true, drink: pick(D.recipes.filter((r) => !tried.includes(r.id))).id });
-    }
-    // newcomers arrive first so they get their introduction; return visits come last
-    const fresh = list.filter((c) => !c.again);
-    return fresh.filter((c) => !isMet(c.who)).concat(fresh.filter((c) => isMet(c.who)), list.filter((c) => c.again));
+    const newcomers = cast.filter((id) => !isMet(id));
+    const known = shuffle(cast.filter(isMet)).slice(0, Math.max(0, n - 1 - newcomers.length));
+    const order = (id) => ({ who: id, drink: Math.random() < 0.7 ? person(id).favorite : pick(D.recipes).id });
+    const list = known.map(order);
+    const locals = shuffle(D.regulars.map((r) => r.id));
+    while (list.length < n - newcomers.length) list.push(order(locals.pop()));
+    shuffle(list);
+    // newcomers arrive first so they get their introduction
+    return newcomers.map(order).concat(list).map(withTreat);
   }
 
   function beginShift() {
@@ -214,8 +238,8 @@
       customers: buildShift().map((c) => Object.assign(c, { patience: 1 })),
       index: 0, sales: 0, tips: 0, sat: [], perfect: 0, correct: 0, affGain: {},
     };
-    G.shift.customers.forEach((c) => preload(c.who, [WALK_FRAME, ...D.expressions.map((e) => `chibi-${e}`)]));
-    scene.set(save.decor, 'day');
+    G.shift.customers.forEach((c) => preload(c.who, isCast(c.who) ? D.expressions.map((e) => `bust-${e}`) : person(c.who).expressions.map((e) => `bust-${e}`)));
+    renderDecor();
     show('cafe');
     nextCustomer(true);
   }
@@ -230,19 +254,12 @@
       c.patience = 1;
       renderCafe('walk-in');
       Sfx.play('tap');
-      if (!settings.reduceMotion) {
-        const el = $('.cust');
-        showWalking(el, c.who);
-        setTimeout(() => { if (current() === c && G.phase === 'arrive') renderCafe(); }, 560);
-      }
     };
     if (first) go();
     else {
       const el = $('.cust');
       $('#cafe-bubble').hidden = true;
       if (el && !settings.reduceMotion) {
-        const prev = G.shift.customers[G.shift.index - 1];
-        if (prev) showWalking(el, prev.who);
         el.classList.add('walk-out');
         setTimeout(go, 420);
       } else go();
@@ -251,7 +268,15 @@
 
   function customerLine(c, kind) { return fill(rawCustomerLine(c, kind)); }
   function rawCustomerLine(c, kind) {
+    const drink = recipeById[c.drink].name;
+    if (!isCast(c.who)) {
+      const r = regById[c.who];
+      if (kind === 'greet') return pick(r.lines.greet);
+      if (kind === 'order') return (c.treat ? D.regularLines.orderTreat : D.regularLines.order).replace('{drink}', drink).replace('{treat}', c.treat ? treatById[c.treat].name : '');
+      return pick(D.regularLines[kind]);
+    }
     const ch = charById[c.who];
+    if (kind === 'order' && c.treat) return `${ch.lines.order.replace('{drink}', drink)} Oh, and a ${treatById[c.treat].name}!`;
     if (kind === 'greet') return c.again ? ch.lines.again : isMet(c.who) ? pick(ch.lines.greet) : ch.lines.meet;
     if (kind === 'order') return ch.lines.order.replace('{drink}', recipeById[c.drink].name);
     // reactions to their usual can mention it; anything else gets a general line
@@ -267,7 +292,7 @@
     const c = current();
 
     if (G.phase === 'hub' || !c) {
-      const idle = isMet('milo') ? `<div class="cust idle"><div class="cust-sprite">${posed('milo', 'chibi', 'neutral')}</div></div>` : '';
+      const idle = isMet('milo') ? `<div class="cust idle"><div class="cust-sprite">${posed('milo', 'counter', 'happy')}</div></div>` : '';
       cust.innerHTML = staffHtml() + idle;
       bubble.hidden = true;
       const lumi = charById.lumi;
@@ -286,9 +311,9 @@
     }
 
     const recipe = recipeById[c.drink];
-    const expr = G.phase === 'served' ? c.reaction : !isMet(c.who) ? 'blush' : c.again ? 'happy' : 'neutral';
+    const expr = G.phase === 'served' ? c.reaction : isCast(c.who) && !isMet(c.who) ? 'blush' : 'neutral';
     const cheer = G.phase === 'served' && anim === 'react' ? (c.result.correct ? 'cheer' : 'oops') : '';
-    cust.innerHTML = staffHtml(cheer) + `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'chibi', expr)}</div></div>`;
+    cust.innerHTML = staffHtml(cheer) + `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'counter', expr)}</div></div>`;
 
     let line;
     if (G.phase === 'arrive') line = c.greetLine || (c.greetLine = customerLine(c, 'greet'));
@@ -298,7 +323,8 @@
     bubble.innerHTML = `<b>${esc(whoName(c.who))}</b>${esc(line)}`;
     bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
 
-    const tierTag = isMet(c.who) ? `<span class="tag tag-heart">${S.icons.heart}${tierOf(aff(c.who)).name}</span>` : '<span class="tag tag-new">New face</span>';
+    const tierTag = !isCast(c.who) ? '<span class="tag">Regular</span>'
+      : isMet(c.who) ? `<span class="tag tag-heart">${S.icons.heart}${tierOf(aff(c.who)).name}</span>` : '<span class="tag tag-new">New face</span>';
     const patience = `<div class="patience" role="img" aria-label="Patience"><span class="patience-fill"></span></div>`;
 
     if (G.phase === 'arrive') {
@@ -311,7 +337,7 @@
       panel.innerHTML = `
         <div class="panel-head"><h2>${esc(whoName(c.who))}</h2>${tierTag}</div>
         ${patience}
-        ${ticketHtml(recipe, true)}
+        ${ticketHtml(recipe, true, c.treat)}
         <button class="btn btn-primary btn-lg btn-block" data-action="make-drink">Make Drink</button>`;
     } else {
       const r = c.result;
@@ -321,30 +347,33 @@
           <div class="result-badge">${r.correct ? '✓' : '✗'}</div>
           <div class="result-body">
             <h2>${r.correct ? (r.pour === 'perfect' ? 'Perfect order!' : 'Order correct!') : 'Not quite right'}</h2>
-            <p>${r.correct ? esc(pourText(r.pour)) : 'Expected ' + r.wrong.map((k) => `<b>${esc(ingName(k, recipe[k]))}</b> (you used ${esc(ingName(k, r.sel[k]))})`).join(', ')}</p>
+            <p>${r.correct ? esc(pourText(r.pour)) : 'Expected ' + r.wrong.map((k) => `<b>${esc(ingName(k, k === 'treat' ? c.treat : recipe[k]))}</b> (you used ${esc(ingName(k, r.sel[k]))})`).join(', ')}</p>
           </div>
         </div>
         <div class="chips">
           <span class="chip">${S.icons.coin}+${r.coins} sale</span>
           <span class="chip">${S.icons.coin}+${r.tip} tip</span>
-          <span class="chip ${r.aff < 0 ? 'chip-down' : 'chip-heart'}">${S.icons.heart}${r.aff >= 0 ? '+' : ''}${r.aff}</span>
+          ${isCast(c.who) ? `<span class="chip ${r.aff < 0 ? 'chip-down' : 'chip-heart'}">${S.icons.heart}${r.aff >= 0 ? '+' : ''}${r.aff}</span>` : ''}
         </div>
         <button class="btn btn-primary btn-lg btn-block" data-action="next-customer">${last ? 'Close Up for the Day' : 'Next Customer'}</button>`;
     }
     updatePatience();
   }
 
-  /* You, at the espresso machine. */
+  /* You, behind the register. */
   function staffHtml(mood = '') {
     if (!save || !save.player) return '';
-    return `<div class="staff ${mood}"><img class="art" src="${artSrc(playerLook().id, 'turn-0')}" alt="" draggable="false"></div>`;
+    const expr = mood === 'cheer' ? 'happy' : mood === 'oops' ? 'sad' : 'smile';
+    return `<div class="staff ${mood}">${playerPortrait(expr)}</div>`;
   }
 
-  function ticketHtml(recipe, showBlurb) {
+  function ticketHtml(recipe, showBlurb, treat) {
+    const t = treat && treatById[treat];
     return `<div class="order-card">
-      <div class="order-cup">${S.cup(recipe, 1, { steam: false })}</div>
+      <div class="order-cup">${itemImg(recipe.art)}${t ? itemImg(t.art, 'order-treat') : ''}</div>
       <div class="order-info">
-        <div class="order-name">${esc(recipe.name)} <span class="order-price">${S.icons.coin}${recipe.price}</span></div>
+        <div class="order-name">${esc(recipe.name)} <span class="order-price">${S.icons.coin}${recipe.price + (t ? t.price : 0)}</span></div>
+        ${t ? `<div class="order-plus">+ ${esc(t.name)}</div>` : ''}
         ${showBlurb ? `<p class="order-blurb">${esc(recipe.blurb)}</p>` : ''}
         <ul class="recipe-list">${RECIPE_KEYS.map((k) => `<li data-k="${k}">${esc(ingName(k, recipe[k]))}</li>`).join('')}</ul>
       </div></div>`;
@@ -377,24 +406,34 @@
     renderDrink();
   }
 
+  /* Steps for the current order: the treat step only appears when they asked for one. */
+  const drinkSteps = () => D.steps.filter((st) => !st.optional || (st.id === 'treat' && current().treat));
+  const neededKeys = () => drinkSteps().map((st) => st.id).filter((k) => k !== 'pour');
+  const stepOptions = (stepId) => (stepId === 'treat' ? D.treats : D.ingredients[stepId]);
+  const allPicked = () => neededKeys().every((k) => G.drink.sel[k] !== undefined);
+
   function renderDrink() {
     const c = current();
     const recipe = recipeById[c.drink];
     const d = G.drink;
-    const stepId = D.steps[d.step].id;
+    const steps = drinkSteps();
+    const stepId = steps[d.step].id;
+    const want = (k) => (k === 'treat' ? c.treat : recipe[k]);
     $('#drink-ticket').innerHTML = `
-      <div class="ticket-who"><div class="mini-head">${portrait(c.who)}</div>
-        <div><div class="ticket-label">Order for ${esc(whoName(c.who))}</div><div class="ticket-drink">${esc(recipe.name)}</div></div></div>
-      <ul class="recipe-list recipe-inline">${RECIPE_KEYS.map((k) => `<li class="${k === stepId ? 'now' : ''}">${esc(ingName(k, recipe[k]))}</li>`).join('')}</ul>
+      <div class="ticket-who"><div class="mini-head">${portrait(c.who, { kind: isCast(c.who) ? 'bust' : 'counter' })}</div>
+        <div class="ticket-main"><div class="ticket-label">Order for ${esc(whoName(c.who))}</div><div class="ticket-drink">${esc(recipe.name)}${c.treat ? ` <small>+ ${esc(treatById[c.treat].name)}</small>` : ''}</div></div>
+        <div class="ticket-goal">${itemImg(recipe.art)}</div></div>
+      <ul class="recipe-list recipe-inline">${neededKeys().map((k) => `<li class="${k === stepId ? 'now' : ''}">${esc(ingName(k, want(k)))}</li>`).join('')}</ul>
       <div class="patience" role="img" aria-label="Patience"><span class="patience-fill"></span></div>`;
     updatePatience();
 
-    $('#drink-steps').innerHTML = D.steps.map((s, i) => {
-      const done = s.id === 'pour' ? d.pouredOnce : d.sel[s.id] !== undefined;
-      const val = s.id === 'pour' ? (d.pouredOnce ? Math.round(d.level * 100) + '%' : '') : d.sel[s.id] ? ingName(s.id, d.sel[s.id]) : '';
+    $('#drink-steps').style.setProperty('--n', steps.length);
+    $('#drink-steps').innerHTML = steps.map((st, i) => {
+      const done = st.id === 'pour' ? d.pouredOnce : d.sel[st.id] !== undefined;
+      const val = st.id === 'pour' ? (d.pouredOnce ? Math.round(d.level * 100) + '%' : '') : d.sel[st.id] ? ingName(st.id, d.sel[st.id]) : '';
       const reachable = i <= firstOpenStep();
       return `<li><button class="step ${i === d.step ? 'current' : ''} ${done ? 'done' : ''}" data-action="goto-step" data-step="${i}" ${reachable ? '' : 'disabled'} aria-current="${i === d.step ? 'step' : 'false'}">
-        <span class="step-n">${i + 1}</span><span class="step-l">${s.label}</span>${val ? `<span class="step-v">${esc(val)}</span>` : ''}</button></li>`;
+        <span class="step-n">${i + 1}</span><span class="step-l">${st.label}</span>${val ? `<span class="step-v">${esc(val)}</span>` : ''}</button></li>`;
     }).join('');
 
     renderCup();
@@ -402,7 +441,7 @@
     const opts = $('#drink-options');
     $('#pour-gauge').classList.toggle('active', stepId === 'pour');
     if (stepId === 'pour') {
-      const ready = RECIPE_KEYS.every((k) => d.sel[k] !== undefined);
+      const ready = allPicked();
       opts.innerHTML = `
         <p class="pour-hint" id="pour-hint">${d.pouredOnce ? esc(pourLabel(d.level)) : 'Hold the button and release inside the pink band.'}</p>
         <button class="btn btn-hold btn-lg btn-block" id="hold-pour" ${ready ? '' : 'disabled'} aria-describedby="pour-hint">Hold to Pour <kbd>Space</kbd></button>
@@ -412,41 +451,59 @@
         </div>`;
       bindHold($('#hold-pour'));
     } else {
-      const list = D.ingredients[stepId];
-      opts.innerHTML = `<p class="opt-title">Choose ${stepId === 'cup' ? 'a cup' : stepId === 'base' ? 'a base' : 'the ' + stepId}</p>
-        <div class="opt-grid">${list.map((o, i) => `
+      const label = { cup: 'a cup', base: 'a base', treat: 'the treat' }[stepId] || 'the ' + stepId;
+      opts.innerHTML = `<p class="opt-title">Choose ${label}</p>
+        <div class="opt-grid">${stepOptions(stepId).map((o, i) => `
           <button class="opt ${d.sel[stepId] === o.id ? 'picked' : ''}" data-action="pick" data-id="${o.id}" aria-pressed="${d.sel[stepId] === o.id}">
-            <span class="opt-art">${stepId === 'cup' ? S.cup({ cup: o.id }, 0, { steam: false }) : swatch(o)}</span>
+            <span class="opt-art">${o.art ? itemImg(o.art) : '<span class="swatch none" aria-hidden="true"></span>'}</span>
             <span class="opt-name">${esc(o.name)}</span><kbd class="opt-key">${i + 1}</kbd>
           </button>`).join('')}</div>`;
     }
   }
 
-  function swatch(o) {
-    if (!o.color) return '<span class="swatch none" aria-hidden="true"></span>';
-    return `<span class="swatch" style="--sw:${o.color}" aria-hidden="true"></span>`;
-  }
-
   function firstOpenStep() {
-    const i = RECIPE_KEYS.findIndex((k) => G.drink.sel[k] === undefined);
-    return i === -1 ? 5 : i;
+    const i = neededKeys().findIndex((k) => G.drink.sel[k] === undefined);
+    return i === -1 ? drinkSteps().length - 1 : i;
   }
 
+  /* Liquid tint for the cup while pouring, from the chosen ingredients. */
+  function liquidColor(sel) {
+    const find = (k) => D.ingredients[k].find((i) => i.id === sel[k]);
+    const base = find('base');
+    if (!base) return null;
+    let col = base.color;
+    const milk = find('milk'), syrup = find('syrup');
+    if (milk && milk.color) col = S.mix(col, milk.color, 0.5);
+    if (syrup && syrup.color) col = S.mix(col, syrup.color, 0.22);
+    return col;
+  }
+
+  /* The cup you picked, filling with a tint of the drink; added ingredients sit beside it. */
   function renderCup() {
     const d = G.drink;
-    const shown = Math.max(d.level, d.sel.base ? 0.18 : 0);
-    $('#cup-stage').innerHTML = S.cup(d.sel, shown, { cls: d.pouring ? 'pouring' : '' }) +
-      (d.pouring ? '<div class="stream" aria-hidden="true"></div>' : '');
+    const cup = D.ingredients.cup.find((x) => x.id === d.sel.cup);
+    const col = liquidColor(d.sel);
+    const fillLevel = clamp(Math.max(d.level, d.sel.base ? 0.15 : 0), 0, 1);
+    const added = neededKeys().filter((k) => k !== 'cup' && d.sel[k] && d.sel[k] !== 'none')
+      .map((k) => (stepOptions(k).find((o) => o.id === d.sel[k]) || {}).art).filter(Boolean);
+    $('#cup-stage').innerHTML = cup
+      ? `<div class="cup-wrap" style="--cup:url('${itemSrc(cup.art)}'); --fill:${fillLevel}; --liquid:${col || 'transparent'}">
+           ${itemImg(cup.art, 'cup-img')}<span class="cup-liquid" aria-hidden="true"></span>
+           ${d.level > 1 ? '<span class="cup-spill" aria-hidden="true"></span>' : ''}
+         </div>
+         ${d.pouring ? `<div class="pitcher" aria-hidden="true">${itemImg('tool-pitcher')}<span class="stream" style="--liquid:${col}"></span></div>` : ''}
+         <div class="added">${added.map((a) => itemImg(a)).join('')}</div>`
+      : '<div class="cup-placeholder">Pick a cup</div>';
     $('#gauge-fill').style.height = clamp(d.level / 1.15, 0, 1) * 100 + '%';
   }
 
   function pickOption(id) {
     const d = G.drink;
-    const stepId = D.steps[d.step].id;
+    const stepId = drinkSteps()[d.step].id;
     d.sel[stepId] = id;
     if (stepId === 'base' && d.level > 0) d.level = 0;
     Sfx.play('select');
-    d.step = Math.min(firstOpenStep(), 5);
+    d.step = firstOpenStep();
     renderDrink();
     const stage = $('#cup-stage');
     stage.classList.remove('bump'); void stage.offsetWidth; stage.classList.add('bump');
@@ -471,8 +528,8 @@
   }
   function startPour() {
     const d = G.drink;
-    if (!d || d.pouring || D.steps[d.step].id !== 'pour') return;
-    if (!RECIPE_KEYS.every((k) => d.sel[k] !== undefined)) return;
+    if (!d || d.pouring || drinkSteps()[d.step].id !== 'pour') return;
+    if (!allPicked()) return;
     d.pouring = true;
     const b = $('#hold-pour'); if (b) b.classList.add('holding');
   }
@@ -486,7 +543,7 @@
     const s = $('#btn-serve'); if (s) s.disabled = d.level < 0.3;
     renderCup();
     if (pourGrade(d.level) === 'perfect') Sfx.play('select');
-    const stepVal = $$('#drink-steps .step')[5];
+    const stepVal = $$('#drink-steps .step').pop();
     if (stepVal) { stepVal.classList.add('done'); }
   }
 
@@ -494,27 +551,32 @@
     const d = G.drink, c = current();
     if (!d || d.level < 0.3) return;
     const recipe = recipeById[c.drink];
-    const wrong = RECIPE_KEYS.filter((k) => d.sel[k] !== recipe[k]);
+    const wrong = neededKeys().filter((k) => d.sel[k] !== (k === 'treat' ? c.treat : recipe[k]));
     const correct = wrong.length === 0;
     const pour = pourGrade(d.level);
     const pat = c.patience;
-    const coins = correct ? recipe.price : Math.round(recipe.price * 0.5);
+    const treatPrice = c.treat && d.sel.treat === c.treat ? treatById[c.treat].price : 0;
+    const coins = (correct ? recipe.price : Math.round(recipe.price * 0.5)) + treatPrice;
     let tip = 0;
     if (correct) {
       tip = 2 + 6 * pat + (pour === 'perfect' ? 3 : 0) - (pour === 'spill' ? 2 : 0) - (pour === 'light' ? 1 : 0);
       tip = Math.max(0, Math.round(tip * (1 + decorBonus())));
     }
-    const sat = correct ? clamp(0.6 + 0.25 * pat + (pour === 'perfect' ? 0.15 : pour === 'good' ? 0.08 : 0), 0, 1) : 0.25 + 0.15 * ((5 - wrong.length) / 5);
-    if (!isMet(c.who)) meet(c.who);
-    const raw = correct ? 3 + (pour === 'perfect' ? 1 : 0) + (c.drink === charById[c.who].favorite ? 1 : 0) : -1;
-    const affDelta = addAffection(c.who, raw);
-    G.shift.affGain[c.who] = (G.shift.affGain[c.who] || 0) + affDelta;
+    const n = neededKeys().length;
+    const sat = correct ? clamp(0.6 + 0.25 * pat + (pour === 'perfect' ? 0.15 : pour === 'good' ? 0.08 : 0), 0, 1) : 0.25 + 0.15 * ((n - wrong.length) / n);
+    let affDelta = 0;
+    if (isCast(c.who)) {
+      if (!isMet(c.who)) meet(c.who);
+      const raw = correct ? 3 + (pour === 'perfect' ? 1 : 0) + (c.drink === charById[c.who].favorite ? 1 : 0) : -1;
+      affDelta = addAffection(c.who, raw);
+      G.shift.affGain[c.who] = (G.shift.affGain[c.who] || 0) + affDelta;
+    }
     save.coins += coins + tip;
     G.shift.sales += coins; G.shift.tips += tip; G.shift.sat.push(sat);
     if (correct) G.shift.correct++;
     if (correct && pour === 'perfect') G.shift.perfect++;
     c.result = { correct, wrong, pour, coins, tip, aff: affDelta, sel: Object.assign({}, d.sel), level: d.level };
-    c.reaction = correct ? (pour === 'perfect' || c.drink === charById[c.who].favorite ? (c.who === 'riven' ? 'smirk' : 'blush') : 'happy') : 'sad';
+    c.reaction = correct ? (pour === 'perfect' || c.drink === person(c.who).favorite ? (c.who === 'riven' ? 'smirk' : 'blush') : 'happy') : 'sad';
     if (correct && pour === 'perfect') c.reaction = 'happy';
     c.reactLine = customerLine(c, correct ? 'happy' : 'wrong');
     G.phase = 'served';
@@ -525,7 +587,9 @@
     const fx = $('#cafe-fx');
     const cupEl = document.createElement('div');
     cupEl.className = 'served-cup';
-    cupEl.innerHTML = S.cup(c.result.sel, Math.min(c.result.level, 1), {});
+    // a correct order is the finished drink; a wrong one is just the cup you made
+    const cupArt = correct ? recipe.art : (D.ingredients.cup.find((x) => x.id === c.result.sel.cup) || {}).art;
+    cupEl.innerHTML = itemImg(cupArt) + (c.treat && d.sel.treat ? itemImg(treatById[d.sel.treat].art, 'served-treat') : '');
     fx.appendChild(cupEl);
     setTimeout(() => cupEl.remove(), 2600);
     if (correct) {
@@ -630,7 +694,7 @@
     persist();
     G.phase = 'hub';
     G.shift = null;
-    scene.set(save.decor, 'day');
+    renderDecor();
     show('cafe');
     renderCafe();
     toast(`Day ${save.day} begins. Rested, caffeinated, ready.`, 'info');
@@ -645,8 +709,11 @@
     G.dlg = { id, sc, node: null, onEnd, typing: false, timer: null, expr: null, full: '' };
     const bg = $('#dlg-bg');
     bg.className = 'dlg-bg bg-' + sc.bg;
-    const cv = $('#dlg-canvas');
-    if (sc.bg.startsWith('cafe')) { cv.hidden = false; window.Cafe.still(cv, save.decor, sc.bg === 'cafe-night' ? 'night' : 'day'); } else cv.hidden = true;
+    // painted backgrounds for scenes at the café; gradients for places elsewhere in town
+    const img = $('#dlg-img');
+    const painted = { 'cafe-day': 'interior-day', 'cafe-night': 'interior-night', storefront: 'storefront' }[sc.bg];
+    img.hidden = !painted;
+    if (painted) img.src = sceneSrc(painted);
     $('#dlg-portrait').innerHTML = '';
     show('dialogue');
     renderMeter();
@@ -829,7 +896,7 @@
       <p>${esc(c.personality)}</p>
       <dl class="detail-dl">
         <div><dt>Likes</dt><dd>${esc(c.likes)}</dd></div>
-        <div><dt>Favorite order</dt><dd class="fav">${S.cup(fav, 1, { steam: false })}<span>${esc(fav.name)}</span></dd></div>
+        <div><dt>Favorite order</dt><dd class="fav">${itemImg(fav.art)}<span>${esc(fav.name)}</span></dd></div>
         <div><dt>Story</dt><dd>${seen} of ${route.length} scenes seen</dd></div>
       </dl>
       <div class="detail-aff">${S.icons.heart}<div class="meter"><span style="--to:${a}%"></span></div><span>${a}/100</span></div>
@@ -851,13 +918,12 @@
       const owned = save.decor.includes(d.id);
       const can = save.coins >= d.price;
       return `<article class="shop-item ${owned ? 'owned' : ''}">
-        <div class="shop-art"><canvas data-preview="${d.id}" aria-hidden="true"></canvas></div>
+        <div class="shop-art" data-preview="${d.id}"><img src="${propSrc(d.art)}" alt="" draggable="false"></div>
         <div class="shop-info"><h3>${esc(d.name)}</h3><p>${esc(d.desc)}</p><span class="tag">+${Math.round(d.bonus * 100)}% tips</span></div>
         <button class="btn ${owned ? '' : can ? 'btn-primary' : ''} shop-buy" data-action="buy" data-id="${d.id}" ${owned || !can ? 'disabled' : ''}>
           ${owned ? 'Placed ✓' : can ? `Buy ${S.icons.coin}${d.price}` : `${S.icons.coin}${d.price}<small>need ${d.price - save.coins}</small>`}
         </button></article>`;
     }).join('');
-    $$('canvas[data-preview]').forEach((cv) => window.Cafe.preview(cv, cv.dataset.preview));
   }
 
   function buy(id) {
@@ -868,9 +934,10 @@
     persist();
     Sfx.play('coin');
     toast(`${d.name} placed in the café!`, 'coin');
+    if (d.treats) setTimeout(() => toast('Customers can now add treats to their orders.', 'unlock'), 400);
     const lumi = charById.lumi;
     if (!isMet('lumi') && save.decor.length === lumi.unlock.count) setTimeout(() => toast('Word is spreading… someone fashionable might visit on your next shift.', 'unlock'), 600);
-    scene.set(save.decor, 'day');
+    renderDecor();
     renderShop();
     const btn = $(`[data-preview="${id}"]`);
     if (btn) { const item = btn.closest('.shop-item'); item.classList.add('bought'); }
@@ -995,7 +1062,7 @@
     if (save.phase === 'intro') { startDay(); return; }
     if (save.phase === 'evening') { renderEvening(); show('evening'); return; }
     G.phase = 'hub'; G.shift = null;
-    scene.set(save.decor, 'day');
+    renderDecor();
     show('cafe');
     renderCafe();
   }
@@ -1124,10 +1191,10 @@
       if (/^[1-3]$/.test(e.key)) { choose(+e.key - 1); return; }
     }
     if (G.screen === 'drink' && G.drink) {
-      const stepId = D.steps[G.drink.step].id;
+      const stepId = drinkSteps()[G.drink.step].id;
       if (stepId === 'pour' && e.key === ' ') { e.preventDefault(); if (!e.repeat) startPour(); return; }
-      if (stepId !== 'pour' && /^[1-4]$/.test(e.key)) {
-        const o = D.ingredients[stepId][+e.key - 1];
+      if (stepId !== 'pour' && /^[1-9]$/.test(e.key)) {
+        const o = stepOptions(stepId)[+e.key - 1];
         if (o) pickOption(o.id);
         return;
       }
