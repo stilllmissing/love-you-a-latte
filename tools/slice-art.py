@@ -3,7 +3,7 @@
     pip install pillow numpy scipy
     python3 tools/slice-art.py
 
-Group sheets (left to right: Milo, Riven, Atlas, Lumi):
+Group sheets (left to right: Milo, Riven, Atlas, Sora):
   cast-fullbody.png    one row of four full-body figures      -> <id>/full.webp
   cast-bust-chibi.png  top row of four large busts             -> <id>/bust.webp
                        (its bottom row of chibis is superseded by the sheets below)
@@ -24,7 +24,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'assets' / 'source'
 OUT = ROOT / 'assets' / 'characters'
-CAST = ['milo', 'riven', 'atlas', 'lumi']
+CAST = ['milo', 'riven', 'atlas', 'sora']
 ALPHA = 40          # pixels fainter than this count as background
 MAX_H = {'full': 900, 'bust': 560}
 
@@ -93,7 +93,7 @@ def _tan_or_brown(rgb):
 BUST_OVERLAPS = [
     (380, 432, 200, 618, 0, 1, lambda rgb, x: _lum(rgb) > 0.45),   # Milo's pink sweater / Riven's black jacket
     (700, 772, 200, 618, 1, 2, lambda rgb, x: (_lum(rgb) < 0.42) & ~_tan_or_brown(rgb)),  # Riven's dark sleeve / Atlas's arm
-    (1130, 1205, 200, 618, 2, 3, lambda rgb, x: _tan_or_brown(rgb) | (x < 1158)),         # Atlas's arm, sleeve and tail / Lumi
+    (1130, 1205, 200, 618, 2, 3, lambda rgb, x: _tan_or_brown(rgb) | (x < 1158)),         # Atlas's arm, sleeve and tail / Sora
 ]
 
 

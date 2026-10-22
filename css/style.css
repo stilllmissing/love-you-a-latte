@@ -361,7 +361,7 @@ small { font-size: 0.78em; opacity: 0.85; }
   opacity: 0.45; transition: opacity 0.2s;
 }
 .gauge.active { opacity: 1; }
-.gauge-zone { position: absolute; left: 0; right: 0; bottom: calc(0.82 / 1.15 * 100%); height: calc(0.16 / 1.15 * 100%); background: repeating-linear-gradient(45deg, #f8b6c2 0 4px, #f39aaa 4px 8px); }
+.gauge-zone { position: absolute; left: 0; right: 0; bottom: var(--zlo, 71.3%); height: var(--zh, 15.7%); background: repeating-linear-gradient(45deg, #f8b6c2 0 4px, #f39aaa 4px 8px); }
 .gauge-max { position: absolute; left: 0; right: 0; bottom: calc(1 / 1.15 * 100%); border-top: 2px dashed var(--bad); }
 .gauge-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(107, 58, 42, 0.55); }
 
@@ -778,4 +778,64 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
 }
 @media (min-width: 520px) {
   #app { margin-block: 0; }
+}
+
+
+/* ---------- Story additions ---------- */
+.pronoun-picker { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pronoun-picker legend { font: 800 0.8rem/1 var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--cocoa-soft); margin-bottom: 8px; }
+.pronoun-picker small { color: var(--cocoa-soft); }
+.pronoun-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.pron-chip { position: relative; }
+.pron-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.pron-chip span {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; cursor: pointer;
+  font: 800 0.95rem/1 var(--font-body); background: var(--paper); border: 3px solid var(--cocoa); border-radius: 999px; box-shadow: 0 3px 0 var(--cocoa);
+}
+.pron-chip input:checked + span { background: var(--gold); }
+.pron-chip input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+.sheet-sub { padding: 18px 16px 0; font-size: 1.25rem; color: var(--coral-deep); }
+.detail-note { font-size: 0.9rem; color: var(--steel); font-style: italic; }
+.tags { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.tag-rush { background: var(--coral); color: var(--cream); }
+
+.order-side { font: 800 0.85rem/1.2 var(--font-body); color: var(--steel); display: flex; gap: 6px; align-items: center; }
+.order-side span { display: inline-flex; gap: 3px; align-items: center; font-family: var(--font-display); }
+.ticket-side { font: 800 0.8rem/1.2 var(--font-body); color: var(--steel); }
+
+.staff-pick { display: grid; gap: 8px; padding: 10px; background: var(--blossom); border: 3px solid var(--cocoa); border-radius: var(--radius); }
+.staff-title { font: 700 1.05rem/1.1 var(--font-display); color: var(--coral-deep); }
+.staff-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 8px; }
+.staff-btn {
+  display: grid; justify-items: center; gap: 2px; padding: 6px 4px; cursor: pointer; min-height: 88px;
+  background: var(--paper); border: 2.5px solid var(--cocoa); border-radius: 10px; font: 800 0.78rem/1.1 var(--font-body);
+}
+.staff-btn.on { background: var(--gold); box-shadow: 0 3px 0 var(--cocoa); }
+.staff-face { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; border: 2px solid var(--cocoa); background: var(--petal); }
+.staff-face .art { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; transform: scale(1.75); transform-origin: 50% 14%; }
+.staff-task { font-size: 0.68rem; color: var(--cocoa-soft); text-transform: uppercase; letter-spacing: 0.06em; }
+.staff-desc { font-size: 0.86rem; color: var(--cocoa-soft); }
+
+/* Guests lean on the counter: a bust, not a full chibi. */
+.cust.guest { height: 48%; bottom: 17%; }
+.cust.guest .art { height: 100%; width: auto; }
+.g-portrait.guest { aspect-ratio: 5 / 6; }
+.dlg-top .icon-btn { margin-left: auto; }
+.dlg-bg.bg-morning { background: linear-gradient(180deg, #fff1e6 0%, #fbd6d6 50%, #f7b7c2 100%); }
+.dlg-bg.bg-morning::before {
+  content: ""; position: absolute; inset: 0; opacity: 0.5;
+  background: radial-gradient(circle at 78% 12%, rgba(255, 248, 214, 0.95), rgba(255, 248, 214, 0) 40%);
+}
+.g-portrait.guest { background: var(--lavender); }
+
+body[data-screen="cafe"] .toasts { top: auto; bottom: var(--toast-gap, 140px); }
+
+/* The closed café has no speech bubble, so the scene can be shorter and leave room for the panel. */
+#screen-cafe.is-hub .scene { min-height: min(52vw, 210px); }
+.staff-task { display: none; }
+.staff-btn { min-height: 74px; }
+@media (max-height: 700px) {
+  #screen-cafe.is-hub .panel { gap: 10px; padding-top: 10px; }
+  .staff-pick { padding: 8px; gap: 6px; }
 }

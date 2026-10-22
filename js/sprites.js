@@ -182,6 +182,20 @@
         for (let x = x0 + 3; x < x1 - 2; x++) b.set(x, surf - 3, '#fffdf8');
         b.set(Math.round((x0 + x1) / 2), surf - 4, '#fffdf8');
       }
+      if (tp.id === 'foam') {
+        for (let x = x0; x <= x1; x++) b.set(x, surf - 1, x % 3 ? '#f6ecdf' : '#fffaf3');
+        for (let x = x0 + 1; x < x1; x++) b.set(x, surf - 2, '#f6ecdf');
+        for (let x = x0 + 4; x < x1 - 3; x++) b.set(x, surf - 3, '#fffaf3');
+      }
+      if (tp.id === 'ice') {
+        // cubes bob at the surface and sit lower in the drink
+        [[x0 + 1, surf], [x1 - 4, surf + 1], [x0 + 4, surf + 5]].forEach(([ix, iy]) => {
+          if (iy + 2 > bottom) return;
+          b.rect(ix, iy, 3, 3, '#d8f0f8');
+          b.set(ix, iy, '#ffffff');
+          b.set(ix + 2, iy + 2, '#a9d4e6');
+        });
+      }
       if (tp.id === 'cinnamon') for (let x = x0 + 1; x < x1; x += 2) b.set(x, surf, '#8a4a22');
       if (tp.id === 'sprinkles') {
         for (let x = x0 + 1; x < x1; x += 3) { b.set(x, surf, '#f0587a'); b.set(x + 1, surf - 1, '#ffd1dc'); }

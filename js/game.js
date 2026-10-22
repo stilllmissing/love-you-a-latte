@@ -1,4 +1,5 @@
-/* Purrfect Pour — game engine: screens, café shift, drink making, story scenes, save data. */
+/* Purrfect Pour — game engine: screens, the 30-day calendar, café shifts, drink making,
+ * story scenes, relationships and save data. Content lives in data.js and story.js. */
 (function () {
   'use strict';
 
@@ -9,15 +10,21 @@
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const shuffle = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
   const charById = Object.fromEntries(D.characters.map((c) => [c.id, c]));
+  const guestById = Object.fromEntries(D.guests.map((g) => [g.id, g]));
   const recipeById = Object.fromEntries(D.recipes.map((r) => [r.id, r]));
   const decorById = Object.fromEntries(D.decor.map((d) => [d.id, d]));
+  const lookById = Object.fromEntries(D.player.looks.map((l) => [l.id, l]));
+  const isCast = (id) => !!charById[id];
+  const person = (id) => charById[id] || guestById[id];
   const ingName = (step, id) => (D.ingredients[step].find((i) => i.id === id) || {}).name || '—';
   const RECIPE_KEYS = ['cup', 'base', 'milk', 'syrup', 'topping'];
+  const withArticle = (name) => (/^[aeiou]/i.test(name) ? 'an ' : 'a ') + name;
 
   /* ---------- Save data ---------- */
-  const SAVE_KEY = 'purrfect-pour:save:v1';
+  const SAVE_KEY = 'purrfect-pour:save:v2';
   const SET_KEY = 'purrfect-pour:settings:v1';
   const store = {
     get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
@@ -26,27 +33,43 @@
   };
   function freshSave() {
     return {
-      v: 1, day: 1, coins: D.economy.startCoins, decor: [], met: {}, affection: {}, scenesSeen: {}, flags: {},
-      phase: 'intro', totals: { served: 0, perfect: 0, earned: 0 }, newBadges: [],
+      v: 2, day: 1, coins: D.economy.startCoins, decor: [], met: {}, affection: {}, scenesSeen: {}, chats: {}, flags: {},
+      guests: {}, seenMoments: {}, seenEvents: {}, momentDay: 0, route: null, usual: null, menuName: null, helper: null,
+      lastShift: null, finished: false, phase: 'intro', player: null, newBadges: [],
+      totals: { served: 0, perfect: 0, earned: 0 },
     };
   }
-  let save = store.get(SAVE_KEY);
-  if (!save || save.v !== 1) save = null;
-  if (save && save.phase === 'shift') save.phase = 'hub'; // an interrupted shift resumes from the closed café
+  function loadSave() {
+    const s = store.get(SAVE_KEY);
+    if (!s || s.v !== 2) return null;
+    const base = freshSave();
+    Object.keys(base).forEach((k) => { if (s[k] === undefined) s[k] = base[k]; });
+    s.decor = s.decor.filter((id) => decorById[id]);
+    if (s.phase === 'shift') s.phase = 'hub';   // an interrupted shift resumes from the closed café
+    return s;
+  }
+  let save = loadSave();
   const settings = Object.assign({ sound: true, textSpeed: 'normal', reduceMotion: false }, store.get(SET_KEY) || {});
   const persist = () => { if (save) store.set(SAVE_KEY, save); };
   const persistSettings = () => store.set(SET_KEY, settings);
 
   /* ---------- Runtime state ---------- */
-  const G = { screen: 'title', returnTo: 'title', phase: 'hub', shift: null, drink: null, dlg: null, modal: null };
+  const G = { screen: 'title', returnTo: 'title', phase: 'hub', shift: null, drink: null, dlg: null, modal: null, create: null };
   const scene = new window.Cafe.Scene($('#cafe-bg'), $('#cafe-fg'));
 
-  /* ---------- Relationship helpers ---------- */
+  /* ---------- Relationships ---------- */
   const aff = (id) => (save && save.affection[id]) || 0;
   const tierOf = (a) => D.tiers.reduce((t, x) => (a >= x.min ? x : t), D.tiers[0]);
   const nextTier = (a) => D.tiers.find((t) => t.min > a);
   const isMet = (id) => !!(save && save.met[id]);
   const decorBonus = () => (save ? save.decor.reduce((s, id) => s + decorById[id].bonus, 0) : 0);
+
+  function closest() {
+    let best = null, bv = -1;
+    D.characters.forEach((c) => { if (isMet(c.id) && aff(c.id) > bv) { bv = aff(c.id); best = c.id; } });
+    return best;
+  }
+  const routeChar = (type) => (save && save.route && save.route.type === type ? save.route.char : null);
 
   function addAffection(id, n) {
     const before = aff(id);
@@ -67,26 +90,74 @@
     toast(`New character unlocked: <b>${charById[id].name}</b>`, 'unlock');
   }
 
-  /* Cast art lives in assets/characters/<id>/: a large bust and full body, eight
-   * bust and eight chibi expressions, and an eight-frame turnaround. */
+  /* ---------- Recurring guests ---------- */
+  const guestState = (id) => (save.guests[id] || (save.guests[id] = { beat: 0, met: false }));
+  const guestDone = (id) => guestState(id).beat >= guestById[id].beats.length;
+  const guestsDone = () => D.guests.filter((g) => guestDone(g.id) && guestState(g.id).met).length;
+  const guestDue = (g) => { const b = g.beats[guestState(g.id).beat]; return b && b.minDay <= save.day ? b : null; };
+
+  /* ---------- Menu ---------- */
+  const menu = () => D.recipes.filter((r) => !r.secret || save.menuName);
+  const recipeName = (id) => (id === 'market_special' && save && save.menuName ? save.menuName : recipeById[id].name);
+
+  /* ---------- Player: name, pronouns, look ---------- */
+  const playerLook = () => lookById[(save && save.player && save.player.look) || D.player.looks[0].id];
+  const playerName = () => (save && save.player && save.player.name) || D.player.defaultName;
+  const pron = () => D.player.pronouns.find((p) => p.id === (save && save.player && save.player.pronouns)) || D.player.pronouns[2];
+  const nameOf = (id) => (id && person(id) ? person(id).name : 'someone');
+
+  /* {name} {NAME} {they} {them} {their} {theirs} {themself} {theyre} (capitalize to capitalize),
+   * {closest} {partner} {waiting} {helper} {usual} {ausual}. */
+  function fill(text) {
+    const p = pron();
+    const usual = save && save.usual ? recipeName(save.usual) : 'your usual';
+    const T = {
+      name: playerName(), NAME: playerName().toUpperCase(),
+      closest: nameOf(closest()), partner: nameOf(routeChar('dating')), waiting: nameOf(routeChar('waiting')),
+      helper: nameOf(save && save.lastShift && save.lastShift.helper), usual, ausual: withArticle(usual),
+    };
+    return String(text).replace(/\{(\w+)\}/g, (m, k) => {
+      if (k in T) return T[k];
+      const lk = k.charAt(0).toLowerCase() + k.slice(1);
+      if (k !== lk && lk in T) return cap(T[lk]);
+      if (k in p && typeof p[k] === 'string' && k !== 'id' && k !== 'label') return p[k];
+      const lower = k.charAt(0).toLowerCase() + k.slice(1);
+      if (lower in p && k !== lower) return cap(p[lower]);
+      return m;
+    });
+  }
+  const drinkTokens = (tpl, id) => {
+    const n = recipeName(id);
+    return tpl.replace(/\{drink\}/g, n).replace(/\{adrink\}/g, withArticle(n)).replace(/\{Adrink\}/g, cap(withArticle(n)));
+  };
+
+  /* ---------- Art ---------- */
+  /* Cast art lives in assets/characters/<id>/: a large bust and full body, eight bust and
+   * eight chibi expressions, an eight-frame turnaround. Guests have a full body and three
+   * bust expressions (the closest match is used for the rest). */
   const artSrc = (id, file) => `assets/characters/${id}/${file}.webp`;
-  const artFile = (kind, expr) => (kind === 'chibi' || kind === 'talk'
-    ? `${kind === 'talk' ? 'bust' : 'chibi'}-${D.expressions.includes(expr) ? expr : 'neutral'}`
+  const artFile = (kind, expr) => (kind === 'chibi' || kind === 'talk' || kind === 'counter'
+    ? `${kind === 'chibi' ? 'chibi' : 'bust'}-${D.expressions.includes(expr) ? expr : 'neutral'}`
     : kind);
+  const GUEST_FALLBACK = {
+    happy: ['content'], content: ['happy'], blush: ['happy', 'content'], smirk: ['happy'], flustered: ['sad'],
+    surprised: ['happy'], sad: ['neutral'], pensive: ['content'],
+  };
+  function guestFile(id, kind, expr) {
+    if (kind === 'full') return 'full';
+    const has = guestById[id].expressions;
+    return 'bust-' + [expr, ...(GUEST_FALLBACK[expr] || []), 'neutral'].find((e) => has.includes(e));
+  }
   function portrait(who, { kind = 'bust', expr = 'neutral', locked = false } = {}) {
-    return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, artFile(kind, expr))}" alt="" draggable="false">`;
+    const file = guestById[who] ? guestFile(who, kind, expr) : artFile(kind, expr);
+    return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, file)}" alt="" draggable="false">`;
   }
   /* Chibi faces are small at café size, so reactions there also get an emote. */
   const EMOTES = { happy: '♪', blush: '♡', flustered: '!!', surprised: '!', sad: '…', smirk: '✧' };
   const emote = (expr) => (EMOTES[expr] ? `<span class="emote emote-${expr}" aria-hidden="true">${EMOTES[expr]}</span>` : '');
   function posed(who, kind, expr) {
-    return `<div class="pose expr-${expr}">${portrait(who, { kind, expr })}${kind === 'chibi' ? emote(expr) : ''}</div>`;
+    return `<div class="pose expr-${expr}">${portrait(who, { kind, expr })}${kind === 'chibi' || kind === 'counter' ? emote(expr) : ''}</div>`;
   }
-  /* ---------- The protagonist ---------- */
-  const lookById = Object.fromEntries(D.player.looks.map((l) => [l.id, l]));
-  const playerLook = () => lookById[(save && save.player && save.player.look) || D.player.looks[0].id];
-  const playerName = () => (save && save.player && save.player.name) || D.player.defaultName;
-  const fill = (text) => String(text).replace(/\{name\}/g, playerName());
   function playerExpr(look, expr) {
     const tries = [expr, ...(D.player.fallback[expr] || []), 'neutral'];
     return tries.find((e) => look.expressions.includes(e));
@@ -94,14 +165,13 @@
   function playerPortrait(expr = 'neutral', look = playerLook()) {
     return `<img class="art art-player" src="${artSrc(look.id, `bust-${playerExpr(look, expr)}`)}" alt="" draggable="false">`;
   }
-
-  function preload(id, files) { if (charById[id]) files.forEach((f) => { new Image().src = artSrc(id, f); }); }
-  const WALK_FRAME = 'turn-6';   // side view facing left: customers enter from the right and leave to the left
+  function preload(id, files) { files.forEach((f) => { new Image().src = artSrc(id, f); }); }
+  const WALK_FRAME = 'turn-6';   // side view facing left: cast enter from the right and leave to the left
   function showWalking(el, who) {
     const img = el && el.querySelector('.art');
-    if (img && charById[who]) { img.src = artSrc(who, WALK_FRAME); el.querySelectorAll('.emote').forEach((e) => e.remove()); }
+    if (img && isCast(who)) { img.src = artSrc(who, WALK_FRAME); el.querySelectorAll('.emote').forEach((e) => e.remove()); }
   }
-  const whoName = (who) => charById[who].name;
+  const whoName = (who) => person(who).name;
 
   /* ---------- Screens ---------- */
   function show(name) {
@@ -110,6 +180,7 @@
     G.screen = name;
     document.body.dataset.screen = name;
     if (name === 'cafe') scene.start(); else scene.stop();
+    placeToasts();
     const el = $('#screen-' + name);
     el.scrollTop = 0;
     const f = el.querySelector('[data-autofocus]') || el.querySelector('.btn-primary:not([disabled])');
@@ -128,15 +199,18 @@
     setTimeout(() => t.remove(), 3700);
   }
 
+  /* In the café, toasts sit just above the panel. Its position changes with the panel's
+   * height, so a ResizeObserver keeps a CSS variable current instead of measuring once. */
   function placeToasts() {
-    const box = $('#toasts');
-    if (G.screen === 'cafe') {
-      // keep the speech bubble and the result panel readable: float over the counter
-      const r = $('#cafe-scene').getBoundingClientRect();
-      box.style.top = 'auto';
-      box.style.bottom = Math.max(8, window.innerHeight - r.bottom + 10) + 'px';
-    } else { box.style.top = ''; box.style.bottom = ''; }
+    const r = $('#cafe-panel').getBoundingClientRect();
+    document.documentElement.style.setProperty('--toast-gap', Math.max(8, window.innerHeight - r.top + 8) + 'px');
   }
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(placeToasts);
+    ro.observe($('#cafe-panel'));
+    ro.observe($('#cafe-scene'));
+  }
+  window.addEventListener('resize', placeToasts);
 
   function floatFx(container, html, x, y, cls = '') {
     const el = document.createElement('div');
@@ -176,45 +250,162 @@
       const met = isMet(c.id);
       return `<div class="title-sprite" style="--i:${i}">${portrait(c.id, { kind: 'chibi', expr: met ? 'happy' : 'neutral', locked: !met })}</div>`;
     }).join('');
-    const cont = $('#btn-continue');
-    cont.disabled = !save;
+    $('#btn-continue').disabled = !save;
     $('#btn-start').textContent = !save ? 'Start Day' : save.phase === 'evening' ? 'Continue Evening' : `Start Day ${save.day}`;
     $('#title-save').innerHTML = save
-      ? `Saved: Day ${save.day} · ${coinHtml(save.coins)} · ${Object.keys(save.met).length} of ${D.characters.length} met`
-      : 'New café. Fresh beans. No save yet.';
+      ? `Saved: Day ${save.day} of ${D.economy.marketDay} · ${coinHtml(save.coins)} · ${Object.keys(save.met).length} of ${D.characters.length} met`
+      : 'New café. Fresh beans. Thirty days until the Night Market.';
+  }
+
+  /* ---------- Story context (what scene conditions and text can ask) ---------- */
+  function decorLine() {
+    if (!save.decor.length) return 'The café looks the way Rosalie left it: pink seats, cozy shelves, and slightly dusty corners that nobody minds.';
+    const names = save.decor.map((id) => decorById[id].name.toLowerCase());
+    const list = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0];
+    return `Your upgrades show: the ${list} make the café look like somewhere people planned to be.`;
+  }
+  function serviceLine() {
+    const { served, perfect } = save.totals;
+    return `You’ve served ${served} drinks this month, ${perfect} of them perfect. ` +
+      (perfect * 2 >= served ? 'Guests keep mentioning how steady your hands are.' : 'Guests keep mentioning how warm the place feels, even when the foam isn’t perfect.');
+  }
+  function storyCtx() {
+    return {
+      day: save.day, met: isMet, aff, closest,
+      decorCount: save.decor.length, usual: save.usual, last: save.lastShift,
+      helper: save.lastShift && save.lastShift.helper,
+      guestMet: (id) => !!(save.guests[id] && save.guests[id].met),
+      guestBeat: (id) => (save.guests[id] && save.guests[id].beat) || 0,
+      guestDone: (id) => guestDone(id) && guestState(id).met, guestsDone,
+      flag: (f) => !!save.flags[f], waiting: () => routeChar('waiting'),
+      decorLine, serviceLine,
+    };
+  }
+
+  /* ---------- Calendar: morning, shift, evening ---------- */
+  function pickMoment(at) {
+    if (save.momentDay === save.day) return null;
+    const ctx = storyCtx();
+    return D.moments.find((m) => m.at === at && !save.seenMoments[m.id] && m.when(ctx)) || null;
+  }
+  function playMoment(m, onEnd) {
+    save.seenMoments[m.id] = true;
+    save.momentDay = save.day;
+    persist();
+    playScene(m.scene, onEnd);
+  }
+
+  /* The closed café before a shift: morning scenes first, then the hub. */
+  function enterHub() {
+    save.phase = 'hub';
+    persist();
+    G.phase = 'hub';
+    G.shift = null;
+    scene.set(save.decor, 'day');
+    const next = () => { show('cafe'); renderCafe(); };
+    const ev = D.events.find((e) => e.at === 'morning' && e.day === save.day && !save.seenEvents[e.id]);
+    if (ev) {
+      save.seenEvents[ev.id] = true;
+      if (ev.meet) meet(ev.meet);
+      persist();
+      playScene(ev.scene, next);
+      return;
+    }
+    const mo = pickMoment('morning');
+    if (mo) { playMoment(mo, next); return; }
+    next();
+  }
+
+  function enterEvening() {
+    save.phase = 'evening';
+    persist();
+    G.phase = 'hub';
+    const ev = D.events.find((e) => e.at === 'evening' && e.day === save.day && !save.seenEvents[e.id]);
+    if (ev) {
+      save.seenEvents[ev.id] = true;
+      persist();
+      if (ev.finale) playFinale(); else playScene(ev.scene, finishDay);
+      return;
+    }
+    const mo = pickMoment('evening');
+    if (mo) { playMoment(mo, showEveningPick); return; }
+    showEveningPick();
+  }
+
+  function finishDay() {
+    save.day += 1;
+    persist();
+    enterHub();
+    toast(`Day ${save.day} begins. Rested, caffeinated, ready.`, 'info');
   }
 
   /* ---------- Café: shift flow ---------- */
   function buildShift() {
-    if (save.day === 1) return D.firstShift.map((x) => Object.assign({}, x));
-    // Everyone you've met drops by (plus a newcomer the café has unlocked), mostly
-    // for their favorite. Short shifts fill up with return visits for something new.
-    const n = 4 + Math.min(2, Math.floor((save.day - 1) / 2));
-    const cast = D.characters.filter((c) => isMet(c.id)).map((c) => c.id);
-    D.characters.forEach((c) => {
-      if (!isMet(c.id) && c.unlock.type === 'decor' && save.decor.length >= c.unlock.count) cast.push(c.id);
+    const day = save.day, ctx = storyCtx();
+    const rush = day === D.rush.day;
+    const target = rush ? D.rush.count : 4 + Math.min(3, Math.floor((day - 1) / 3));
+    const scripted = D.scripted.filter((s) => (s.day === day) || (s.when && s.when(ctx)));
+    const used = new Set(scripted.map((s) => s.who));
+
+    const makeCast = (id) => {
+      const ch = charById[id];
+      const drink = Math.random() < 0.7 ? ch.favorite : pick(menu()).id;
+      return { who: id, drink, side: id === 'riven' && drink === ch.favorite ? ch.side : null };
+    };
+    const makeGuest = (id) => {
+      const g = guestById[id], b = guestDue(g);
+      const drink = (b && b.drink) || (Math.random() < 0.8 ? g.favorite : pick(menu()).id);
+      return { who: id, guest: true, drink, beat: b };
+    };
+
+    const castPool = D.characters.filter((c) => isMet(c.id) && !used.has(c.id)).map((c) => c.id);
+    const guestsAvail = D.guests.filter((g) => g.from <= day && !used.has(g.id));
+    const pool = [];
+    shuffle(guestsAvail.filter(guestDue)).slice(0, 2).forEach((g) => pool.push(g.id));
+    shuffle(castPool.slice()).forEach((id) => { if (Math.random() < 0.75) pool.push(id); });
+    if (!pool.some(isCast) && castPool.length) pool.push(pick(castPool));
+    shuffle(guestsAvail.filter((g) => !pool.includes(g.id))).forEach((g) => pool.push(g.id));
+    shuffle(castPool.filter((id) => !pool.includes(id))).forEach((id) => pool.push(id));
+
+    const slots = Math.max(0, target - scripted.length);
+    const list = shuffle(pool.slice(0, slots).map((id) => (isCast(id) ? makeCast(id) : makeGuest(id))));
+
+    scripted.slice().sort((a, b) => a.slot - b.slot).forEach((s) => {
+      const base = isCast(s.who) ? makeCast(s.who) : makeGuest(s.who);
+      const c = Object.assign(base, { drink: s.drink || base.drink }, {
+        intro: s.intro, outro: s.outro, orderLine: s.orderLine, firstVisit: s.firstVisit,
+      });
+      if (s.beat !== undefined && guestById[s.who]) c.beat = guestById[s.who].beats[s.beat];
+      if (c.who === 'riven' && c.drink === charById.riven.favorite) c.side = charById.riven.side;
+      list.splice(Math.min(s.slot, list.length), 0, c);
     });
-    const first = shuffle(cast.filter(isMet)).concat(cast.filter((id) => !isMet(id)));
-    const list = first.map((id) => ({ who: id, drink: Math.random() < 0.75 ? charById[id].favorite : pick(D.recipes).id }));
-    const visitors = shuffle(cast.slice());
-    while (list.length < n && visitors.length) {
-      const id = visitors.pop();
-      const tried = list.filter((c) => c.who === id).map((c) => c.drink);
-      list.push({ who: id, again: true, drink: pick(D.recipes.filter((r) => !tried.includes(r.id))).id });
-    }
-    // newcomers arrive first so they get their introduction; return visits come last
-    const fresh = list.filter((c) => !c.again);
-    return fresh.filter((c) => !isMet(c.who)).concat(fresh.filter((c) => isMet(c.who)), list.filter((c) => c.again));
+    return list.map((c) => Object.assign(c, { patience: 1 }));
   }
+
+  /* Staff effects chosen in the morning (unlocked after day 15's rush). */
+  const helperTask = () => (G.shift && G.shift.helper ? D.staffTasks[G.shift.helper] : null);
+  const perfectFrom = () => (helperTask() && helperTask().perfectFrom) || 0.82;
+  const drainFactor = () => {
+    let f = 1;
+    if (G.shift) {
+      if (G.shift.rush) f *= D.rush.patience;
+      if (G.shift.assist) f *= 0.75;
+      if (helperTask() && helperTask().patience) f *= helperTask().patience;
+    }
+    return f;
+  };
 
   function beginShift() {
     save.phase = 'shift';
     persist();
     G.shift = {
-      customers: buildShift().map((c) => Object.assign(c, { patience: 1 })),
-      index: 0, sales: 0, tips: 0, sat: [], perfect: 0, correct: 0, affGain: {},
+      customers: buildShift(), index: 0, sales: 0, tips: 0, sat: [], perfect: 0, correct: 0, imperfect: 0, affGain: {},
+      rush: save.day === D.rush.day, helper: save.flags.staff_tasks && save.helper && isMet(save.helper) ? save.helper : null,
     };
-    G.shift.customers.forEach((c) => preload(c.who, [WALK_FRAME, ...D.expressions.map((e) => `chibi-${e}`)]));
+    G.shift.customers.forEach((c) => {
+      if (isCast(c.who)) preload(c.who, ['turn-6', ...D.expressions.map((e) => `chibi-${e}`)]);
+      else preload(c.who, person(c.who).expressions.map((e) => `bust-${e}`));
+    });
     scene.set(save.decor, 'day');
     show('cafe');
     nextCustomer(true);
@@ -224,16 +415,19 @@
 
   function nextCustomer(first) {
     const go = () => {
+      G.advancing = false;
       if (G.shift.index >= G.shift.customers.length) { endShift(); return; }
       G.phase = 'arrive';
       const c = current();
       c.patience = 1;
       renderCafe('walk-in');
       Sfx.play('tap');
-      if (!settings.reduceMotion) {
-        const el = $('.cust');
-        showWalking(el, c.who);
+      if (isCast(c.who) && !settings.reduceMotion) {
+        showWalking($('.cust'), c.who);
         setTimeout(() => { if (current() === c && G.phase === 'arrive') renderCafe(); }, 560);
+      }
+      if (c.intro && !c.introDone) {
+        setTimeout(() => { if (current() === c && G.phase === 'arrive' && !c.introDone) playIntro(c); }, 800);
       }
     };
     if (first) go();
@@ -249,14 +443,55 @@
     }
   }
 
-  function customerLine(c, kind) { return fill(rawCustomerLine(c, kind)); }
-  function rawCustomerLine(c, kind) {
+  /* A customer's own scene plays as they arrive and ends with their order. */
+  function playIntro(c) {
+    c.introDone = true;
+    if (isCast(c.who) && !isMet(c.who)) meet(c.who);
+    playScene(c.intro, () => { G.phase = 'ordered'; show('cafe'); renderCafe(); });
+  }
+
+  function advanceCustomer(fromScene) {
+    if (G.advancing && fromScene !== true) return;   // ignore a second tap while the next customer walks in
+    G.advancing = true;
+    const c = current();
+    if (c.outro && !c.outroDone) {
+      c.outroDone = true;
+      playScene(c.outro, () => { show('cafe'); advanceCustomer(true); });
+      return;
+    }
+    G.shift.index++;
+    const sh = G.shift;
+    if (sh.rush && !sh.rushDone && sh.index === D.rush.after + 1 && sh.index < sh.customers.length) {
+      sh.rushDone = true;
+      playScene(D.rush.scene, () => { sh.assist = true; show('cafe'); nextCustomer(true); });
+      return;
+    }
+    nextCustomer(false);
+  }
+
+  function greetLine(c) {
+    if (c.guest) return c.beat ? c.beat.text : pick(guestById[c.who].idle);
     const ch = charById[c.who];
-    if (kind === 'greet') return c.again ? ch.lines.again : isMet(c.who) ? pick(ch.lines.greet) : ch.lines.meet;
-    if (kind === 'order') return ch.lines.order.replace('{drink}', recipeById[c.drink].name);
-    // reactions to their usual can mention it; anything else gets a general line
-    const fav = c.drink === ch.favorite && ch.lines[kind === 'happy' ? 'favHappy' : 'favWrong'];
-    return pick(fav || ch.lines[kind]);
+    return c.firstVisit && ch.lines.meet ? ch.lines.meet : pick(ch.lines.greet);
+  }
+  function orderLine(c) {
+    if (c.orderLine) return fill(c.orderLine);
+    let tpl;
+    if (c.guest) {
+      const g = guestById[c.who];
+      tpl = guestDone(c.who) && g.orderDone ? g.orderDone : (c.beat && c.beat.order) || g.order;
+    } else {
+      const ch = charById[c.who];
+      if (c.drink === ch.favorite) tpl = c.who === 'riven' && aff('riven') >= 45 ? ch.lines.favOrderClose : ch.lines.favOrder;
+      else tpl = ch.lines.order;
+    }
+    return fill(drinkTokens(tpl, c.drink));
+  }
+  function reactLine(c, ok) {
+    if (c.guest) return pick(D.guestLines[ok ? 'happy' : 'wrong']);
+    const ch = charById[c.who];
+    const fav = c.drink === ch.favorite && ch.lines[ok ? 'favHappy' : 'favWrong'];
+    return pick(fav || ch.lines[ok ? 'happy' : 'wrong']);
   }
 
   function renderCafe(anim) {
@@ -266,52 +501,46 @@
     const panel = $('#cafe-panel');
     const c = current();
 
+    $('#screen-cafe').classList.toggle('is-hub', G.phase === 'hub' || !c);
     if (G.phase === 'hub' || !c) {
       const idle = isMet('milo') ? `<div class="cust idle"><div class="cust-sprite">${posed('milo', 'chibi', 'neutral')}</div></div>` : '';
       cust.innerHTML = staffHtml() + idle;
       bubble.hidden = true;
-      const lumi = charById.lumi;
-      const hints = [];
-      if (!isMet('lumi')) hints.push(save.decor.length >= lumi.unlock.count
-        ? 'Someone very stylish has been peeking through the window. Maybe tomorrow…'
-        : `Rumor has it a fashionable regular only visits cafés with ${lumi.unlock.count}+ décor pieces. You have ${save.decor.length}.`);
-      const cheapest = D.decor.filter((d) => !save.decor.includes(d.id)).sort((a, b) => a.price - b.price)[0];
-      if (cheapest) hints.push(save.coins >= cheapest.price ? `You can afford the ${cheapest.name}. Visit Upgrades!` : `Next décor: ${cheapest.name} for ${cheapest.price} coins.`);
-      panel.innerHTML = `
-        <div class="panel-head"><h2>The Velvet Paw</h2><span class="tag">Closed</span></div>
-        <p class="panel-text">${isMet('milo') ? 'Milo is wiping down the counter and humming. ' : ''}The sign on the door is waiting to be flipped.</p>
-        ${hints.map((h) => `<p class="hint">${h}</p>`).join('')}
-        <button class="btn btn-primary btn-lg btn-block" data-action="open-cafe">Open Café · Day ${save.day}</button>`;
+      panel.innerHTML = hubHtml();
       return;
     }
 
     const recipe = recipeById[c.drink];
-    const expr = G.phase === 'served' ? c.reaction : !isMet(c.who) ? 'blush' : c.again ? 'happy' : 'neutral';
+    const expr = G.phase === 'served' ? c.reaction : isCast(c.who) && !isMet(c.who) ? 'blush' : 'neutral';
     const cheer = G.phase === 'served' && anim === 'react' ? (c.result.correct ? 'cheer' : 'oops') : '';
-    cust.innerHTML = staffHtml(cheer) + `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'chibi', expr)}</div></div>`;
+    const body = c.guest ? posed(c.who, 'bust', expr) : posed(c.who, 'chibi', expr);
+    cust.innerHTML = staffHtml(cheer) + `<div class="cust ${c.guest ? 'guest' : ''} ${anim || ''}"><div class="cust-sprite">${body}</div></div>`;
 
     let line;
-    if (G.phase === 'arrive') line = c.greetLine || (c.greetLine = customerLine(c, 'greet'));
-    else if (G.phase === 'ordered') line = c.orderLine || (c.orderLine = customerLine(c, 'order'));
-    else line = c.reactLine;
-    bubble.hidden = false;
-    bubble.innerHTML = `<b>${esc(whoName(c.who))}</b>${esc(line)}`;
+    if (G.phase === 'arrive') line = c.intro && !c.introDone ? '' : (c.greetLine || (c.greetLine = fill(greetLine(c))));
+    else if (G.phase === 'ordered') line = c.orderText || (c.orderText = orderLine(c));
+    else line = c.reactText;
+    bubble.hidden = !line;
+    bubble.innerHTML = `<b>${esc(whoName(c.who))}</b>${esc(line || '')}`;
     bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
 
-    const tierTag = isMet(c.who) ? `<span class="tag tag-heart">${S.icons.heart}${tierOf(aff(c.who)).name}</span>` : '<span class="tag tag-new">New face</span>';
+    const tierTag = !isCast(c.who) ? '<span class="tag">Regular</span>'
+      : isMet(c.who) ? `<span class="tag tag-heart">${S.icons.heart}${tierOf(aff(c.who)).name}</span>` : '<span class="tag tag-new">New face</span>';
     const patience = `<div class="patience" role="img" aria-label="Patience"><span class="patience-fill"></span></div>`;
+    const rushTag = G.shift && G.shift.rush ? '<span class="tag tag-rush">Rush hour</span>' : '';
 
     if (G.phase === 'arrive') {
+      const waiting = c.intro && !c.introDone;
       panel.innerHTML = `
-        <div class="panel-head"><h2>${esc(whoName(c.who))}</h2>${tierTag}</div>
+        <div class="panel-head"><h2>${esc(whoName(c.who))}</h2><span class="tags">${rushTag}${tierTag}</span></div>
         ${patience}
-        <p class="panel-text">A customer is waiting at the counter.</p>
-        <button class="btn btn-primary btn-lg btn-block" data-action="take-order">Take Order</button>`;
+        <p class="panel-text">${waiting ? 'Someone is approaching the counter…' : 'A customer is waiting at the counter.'}</p>
+        <button class="btn btn-primary btn-lg btn-block" data-action="take-order" ${waiting ? 'disabled' : ''}>Take Order</button>`;
     } else if (G.phase === 'ordered') {
       panel.innerHTML = `
-        <div class="panel-head"><h2>${esc(whoName(c.who))}</h2>${tierTag}</div>
+        <div class="panel-head"><h2>${esc(whoName(c.who))}</h2><span class="tags">${rushTag}${tierTag}</span></div>
         ${patience}
-        ${ticketHtml(recipe, true)}
+        ${ticketHtml(c, true)}
         <button class="btn btn-primary btn-lg btn-block" data-action="make-drink">Make Drink</button>`;
     } else {
       const r = c.result;
@@ -327,11 +556,41 @@
         <div class="chips">
           <span class="chip">${S.icons.coin}+${r.coins} sale</span>
           <span class="chip">${S.icons.coin}+${r.tip} tip</span>
-          <span class="chip ${r.aff < 0 ? 'chip-down' : 'chip-heart'}">${S.icons.heart}${r.aff >= 0 ? '+' : ''}${r.aff}</span>
+          ${isCast(c.who) ? `<span class="chip ${r.aff < 0 ? 'chip-down' : 'chip-heart'}">${S.icons.heart}${r.aff >= 0 ? '+' : ''}${r.aff}</span>` : ''}
         </div>
         <button class="btn btn-primary btn-lg btn-block" data-action="next-customer">${last ? 'Close Up for the Day' : 'Next Customer'}</button>`;
     }
     updatePatience();
+  }
+
+  /* The closed café: countdown, hints and (after day 15) who's helping today. */
+  function hubHtml() {
+    const left = D.economy.marketDay - save.day;
+    const status = save.finished
+      ? 'The Night Market came and went, and the café is as busy as ever.'
+      : left > 0 ? `${left} ${left === 1 ? 'day' : 'days'} until the Bellflower Night Market.` : 'The Bellflower Night Market is tonight.';
+    const hints = [];
+    const cheapest = D.decor.filter((d) => !save.decor.includes(d.id)).sort((a, b) => a.price - b.price)[0];
+    if (cheapest) hints.push(save.coins >= cheapest.price ? `You can afford the ${cheapest.name}. Visit Upgrades!` : `Next décor: ${cheapest.name} for ${cheapest.price} coins.`);
+    let staff = '';
+    if (save.flags.staff_tasks) {
+      const options = D.characters.filter((c) => isMet(c.id));
+      const cur = save.helper && isMet(save.helper) ? save.helper : null;
+      staff = `<div class="staff-pick" role="group" aria-label="Who is helping today">
+        <p class="staff-title">Who’s helping today?</p>
+        <div class="staff-opts">
+          ${options.map((c) => `<button class="staff-btn ${cur === c.id ? 'on' : ''}" data-action="set-helper" data-id="${c.id}" aria-pressed="${cur === c.id}">
+            <span class="staff-face">${portrait(c.id)}</span><span class="staff-name">${c.name}</span><span class="staff-task">${D.staffTasks[c.id].task}</span></button>`).join('')}
+        </div>
+        <p class="staff-desc">${cur ? esc(D.staffTasks[cur].desc) : 'Pick someone for a bonus today, or work the shift on your own.'}</p>
+      </div>`;
+    }
+    return `
+      <div class="panel-head"><h2>The Velvet Paw</h2><span class="tag">Closed</span></div>
+      <p class="panel-text">${esc(status)} ${isMet('milo') ? 'Milo is wiping down the counter.' : ''}</p>
+      ${staff}
+      <button class="btn btn-primary btn-lg btn-block" data-action="open-cafe">Open Café · Day ${save.day}</button>
+      ${staff ? '' : hints.map((h) => `<p class="hint">${h}</p>`).join('')}`;
   }
 
   /* You, at the espresso machine. */
@@ -340,11 +599,13 @@
     return `<div class="staff ${mood}"><img class="art" src="${artSrc(playerLook().id, 'turn-0')}" alt="" draggable="false"></div>`;
   }
 
-  function ticketHtml(recipe, showBlurb) {
+  function ticketHtml(c, showBlurb) {
+    const recipe = recipeById[c.drink];
     return `<div class="order-card">
       <div class="order-cup">${S.cup(recipe, 1, { steam: false })}</div>
       <div class="order-info">
-        <div class="order-name">${esc(recipe.name)} <span class="order-price">${S.icons.coin}${recipe.price}</span></div>
+        <div class="order-name">${esc(recipeName(recipe.id))} <span class="order-price">${S.icons.coin}${recipe.price}</span></div>
+        ${c.side ? `<div class="order-side">+ ${esc(c.side.name)} <span>${S.icons.coin}${c.side.price}</span></div>` : ''}
         ${showBlurb ? `<p class="order-blurb">${esc(recipe.blurb)}</p>` : ''}
         <ul class="recipe-list">${RECIPE_KEYS.map((k) => `<li data-k="${k}">${esc(ingName(k, recipe[k]))}</li>`).join('')}</ul>
       </div></div>`;
@@ -384,7 +645,7 @@
     const stepId = D.steps[d.step].id;
     $('#drink-ticket').innerHTML = `
       <div class="ticket-who"><div class="mini-head">${portrait(c.who)}</div>
-        <div><div class="ticket-label">Order for ${esc(whoName(c.who))}</div><div class="ticket-drink">${esc(recipe.name)}</div></div></div>
+        <div><div class="ticket-label">Order for ${esc(whoName(c.who))}</div><div class="ticket-drink">${esc(recipeName(recipe.id))}</div>${c.side ? `<div class="ticket-side">+ ${esc(c.side.name)}</div>` : ''}</div></div>
       <ul class="recipe-list recipe-inline">${RECIPE_KEYS.map((k) => `<li class="${k === stepId ? 'now' : ''}">${esc(ingName(k, recipe[k]))}</li>`).join('')}</ul>
       <div class="patience" role="img" aria-label="Patience"><span class="patience-fill"></span></div>`;
     updatePatience();
@@ -400,7 +661,10 @@
     renderCup();
 
     const opts = $('#drink-options');
-    $('#pour-gauge').classList.toggle('active', stepId === 'pour');
+    const gauge = $('#pour-gauge');
+    gauge.classList.toggle('active', stepId === 'pour');
+    gauge.style.setProperty('--zlo', (perfectFrom() / 1.15 * 100).toFixed(1) + '%');
+    gauge.style.setProperty('--zh', ((1 - perfectFrom()) / 1.15 * 100).toFixed(1) + '%');
     if (stepId === 'pour') {
       const ready = RECIPE_KEYS.every((k) => d.sel[k] !== undefined);
       opts.innerHTML = `
@@ -456,12 +720,12 @@
 
   function pourLabel(l) {
     if (l > 1.0) return 'Oops, it spilled over! Serve anyway or start over.';
-    if (l >= 0.82) return 'Perfect pour! Serve it while it\'s pretty.';
+    if (l >= perfectFrom()) return 'Perfect pour! Serve it while it\'s pretty.';
     if (l >= 0.6) return 'Nice pour. A touch more reaches the pink band.';
     if (l >= 0.3) return 'Keep going, it\'s looking a bit light.';
     return 'Hold to pour a little more.';
   }
-  const pourGrade = (l) => (l > 1.0 ? 'spill' : l >= 0.82 ? 'perfect' : l >= 0.6 ? 'good' : 'light');
+  const pourGrade = (l) => (l > 1.0 ? 'spill' : l >= perfectFrom() ? 'perfect' : l >= 0.6 ? 'good' : 'light');
 
   function bindHold(btn) {
     if (!btn) return;
@@ -490,6 +754,22 @@
     if (stepVal) { stepVal.classList.add('done'); }
   }
 
+  /* A guest's story beat counts once you've served them; finishing it can pay off. */
+  function advanceGuest(c) {
+    const g = guestById[c.who], st = guestState(c.who);
+    const first = !st.met;
+    st.met = true;
+    if (first) { toast(`New regular: <b>${g.name}</b>`, 'unlock'); Sfx.play('unlock'); }
+    if (c.beat && g.beats[st.beat] === c.beat) {
+      st.beat += 1;
+      if (st.beat >= g.beats.length) {
+        if (g.reward === 'tips') save.flags.reward_tips = true;
+        if (g.reward === 'chairs' && !save.decor.includes('chairs')) save.decor.push('chairs');
+        setTimeout(() => toast(`${g.name}’s story is complete.${g.reward === 'tips' ? ' Tips +5%.' : g.reward === 'chairs' ? ' The Pastel Chairs are yours again.' : ''}`, 'heart'), 700);
+      }
+    }
+  }
+
   function serve() {
     const d = G.drink, c = current();
     if (!d || d.level < 0.3) return;
@@ -498,27 +778,36 @@
     const correct = wrong.length === 0;
     const pour = pourGrade(d.level);
     const pat = c.patience;
-    const coins = correct ? recipe.price : Math.round(recipe.price * 0.5);
+    const task = helperTask();
+    let coins = correct ? recipe.price : Math.round(recipe.price * 0.5);
+    if (task && task.perOrder) coins += task.perOrder;
+    if (correct && c.side) coins += c.side.price;
     let tip = 0;
     if (correct) {
       tip = 2 + 6 * pat + (pour === 'perfect' ? 3 : 0) - (pour === 'spill' ? 2 : 0) - (pour === 'light' ? 1 : 0);
-      tip = Math.max(0, Math.round(tip * (1 + decorBonus())));
+      const bonus = 1 + decorBonus() + (save.flags.reward_tips ? 0.05 : 0) + (task && task.tips ? task.tips : 0);
+      tip = Math.max(0, Math.round(tip * bonus));
     }
     const sat = correct ? clamp(0.6 + 0.25 * pat + (pour === 'perfect' ? 0.15 : pour === 'good' ? 0.08 : 0), 0, 1) : 0.25 + 0.15 * ((5 - wrong.length) / 5);
-    if (!isMet(c.who)) meet(c.who);
-    const raw = correct ? 3 + (pour === 'perfect' ? 1 : 0) + (c.drink === charById[c.who].favorite ? 1 : 0) : -1;
-    const affDelta = addAffection(c.who, raw);
-    G.shift.affGain[c.who] = (G.shift.affGain[c.who] || 0) + affDelta;
+    let affDelta = 0;
+    if (isCast(c.who)) {
+      if (!isMet(c.who)) meet(c.who);
+      const raw = correct ? 3 + (pour === 'perfect' ? 1 : 0) + (c.drink === charById[c.who].favorite ? 1 : 0) : -1;
+      affDelta = addAffection(c.who, raw);
+      G.shift.affGain[c.who] = (G.shift.affGain[c.who] || 0) + affDelta;
+    } else advanceGuest(c);
     save.coins += coins + tip;
     G.shift.sales += coins; G.shift.tips += tip; G.shift.sat.push(sat);
     if (correct) G.shift.correct++;
     if (correct && pour === 'perfect') G.shift.perfect++;
+    if (!correct || pour === 'spill' || pour === 'light') G.shift.imperfect++;
     c.result = { correct, wrong, pour, coins, tip, aff: affDelta, sel: Object.assign({}, d.sel), level: d.level };
-    c.reaction = correct ? (pour === 'perfect' || c.drink === charById[c.who].favorite ? (c.who === 'riven' ? 'smirk' : 'blush') : 'happy') : 'sad';
-    if (correct && pour === 'perfect') c.reaction = 'happy';
-    c.reactLine = customerLine(c, correct ? 'happy' : 'wrong');
+    const fav = person(c.who).favorite;
+    c.reaction = correct ? (isCast(c.who) && pour !== 'perfect' && c.drink === fav ? (c.who === 'riven' ? 'smirk' : 'blush') : 'happy') : 'sad';
+    c.reactText = fill(reactLine(c, correct));
     G.phase = 'served';
     G.drink = null;
+    persist();
 
     show('cafe');
     renderCafe('react');
@@ -545,6 +834,10 @@
     save.totals.served += sh.customers.length;
     save.totals.perfect += sh.perfect;
     save.totals.earned += sh.sales + sh.tips;
+    save.lastShift = {
+      day: save.day, served: sh.customers.length, allCorrect: sh.correct === sh.customers.length,
+      imperfect: sh.imperfect > 0, helper: sh.helper,
+    };
     save.phase = 'evening';
     persist();
     G.phase = 'hub';
@@ -563,7 +856,7 @@
         <div class="meter"><span style="--to:${a}%"></span></div><div class="aff-tier">${tierOf(a).name} · ${a}/100</div></div></li>`;
     }).join('');
     $('#results-card').innerHTML = `
-      <p class="eyebrow">Day ${save.day} complete</p>
+      <p class="eyebrow">Day ${save.day} complete${sh.rush ? ' · Rush hour' : ''}</p>
       <h2 id="results-heading">Closing Time</h2>
       <div class="stars" aria-label="${stars} out of 5 stars">${[1, 2, 3, 4, 5].map((i) => `<span class="star" style="--i:${i}">${i <= stars ? S.icons.star : S.icons.starEmpty}</span>`).join('')}</div>
       <p class="sat">Customer satisfaction <b>${Math.round(satAvg * 100)}%</b></p>
@@ -598,11 +891,15 @@
   function nextSceneFor(id) {
     const route = D.routes[id] || [];
     const seen = save.scenesSeen[id] || 0;
-    if (seen < route.length && aff(id) >= route[seen].min) return { scene: route[seen].scene, isNew: true };
-    return { scene: id + '_chat', isNew: false, lockedAt: route[seen] ? route[seen].min : null };
+    const r = route[seen];
+    if (r && aff(id) >= r.min && save.day >= (r.day || 0)) return { scene: r.scene, isNew: true };
+    const chats = D.chats[id];
+    return { scene: chats[(save.chats[id] || 0) % chats.length], isNew: false, lockedAt: r ? r.min : null, lockedDay: r && r.day > save.day ? r.day : null };
   }
 
-  function renderEvening() {
+  function showEveningPick() {
+    save.phase = 'evening';
+    persist();
     const met = D.characters.filter((c) => isMet(c.id));
     $('#evening-inner').innerHTML = `
       <p class="eyebrow">Day ${save.day} · After hours</p>
@@ -611,43 +908,80 @@
       <div class="evening-list">${met.map((c) => {
         const n = nextSceneFor(c.id);
         const a = aff(c.id);
+        const note = n.isNew ? `<span class="tag tag-new">New story</span> ${esc(D.scenes[n.scene].title)}`
+          : `Casual chat${n.lockedDay ? ` · next story on day ${n.lockedDay}` : n.lockedAt != null ? ` · next story at ♥${n.lockedAt}` : ''}`;
         return `<article class="eve-card" style="--accent:${c.color}">
           <div class="eve-portrait">${portrait(c.id)}</div>
           <div class="eve-info">
             <h3>${c.name} <small>${c.age}</small></h3>
             <div class="meter meter-sm"><span style="--to:${a}%"></span></div>
             <p class="eve-tier">${S.icons.heart} ${tierOf(a).name} · ${a}/100</p>
-            <p class="eve-scene">${n.isNew ? `<span class="tag tag-new">New story</span> ${esc(D.scenes[n.scene].title)}` : `Casual chat${n.lockedAt != null ? ` · next story at ♥${n.lockedAt}` : ''}`}</p>
+            <p class="eve-scene">${note}</p>
             <button class="btn ${n.isNew ? 'btn-primary' : ''} btn-block" data-action="evening-pick" data-id="${c.id}">Spend time with ${c.name}</button>
           </div></article>`;
       }).join('')}</div>
       <button class="btn btn-soft btn-block" data-action="evening-skip">Head home early</button>`;
+    show('evening');
   }
 
-  function finishDay() {
+  /* ---------- The Night Market finale ---------- */
+  function playFinale() {
+    playScene('night_market', () => {
+      const c = closest();
+      if (c && aff(c) >= D.economy.confessAt) playScene(c + '_confession', endingScene);
+      else endingScene();
+    });
+  }
+  function endingScene() {
+    const r = save.route;
+    const id = r && r.type === 'dating' ? 'ending_' + r.char : 'ending_friends';
+    playScene(id, finishGame);
+  }
+  function finishGame() {
+    save.finished = true;
     save.day += 1;
     save.phase = 'hub';
     persist();
-    G.phase = 'hub';
-    G.shift = null;
+    const c = closest(), r = save.route;
+    const line = r && r.type === 'dating' ? `You and ${charById[r.char].name} are writing a new chapter of the café together.`
+      : r && r.type === 'waiting' ? `${charById[r.char].name} is waiting on your answer, and in no hurry.`
+      : 'The café has become the place everyone wants to come back to.';
+    // show the café under the end card; the next morning's scenes wait until you've closed it
+    G.phase = 'hub'; G.shift = null;
     scene.set(save.decor, 'day');
-    show('cafe');
-    renderCafe();
-    toast(`Day ${save.day} begins. Rested, caffeinated, ready.`, 'info');
+    show('cafe'); renderCafe();
+    openModal(`
+      <p class="eyebrow">Thirty days on Bellflower Lane</p>
+      <h2 id="modal-title">The End</h2>
+      <p>${esc(line)}</p>
+      <dl class="detail-dl">
+        <div><dt>Drinks served</dt><dd>${save.totals.served} (${save.totals.perfect} perfect)</dd></div>
+        <div><dt>Closest friend</dt><dd>${c ? esc(charById[c].name) + ' · ' + tierOf(aff(c)).name : '—'}</dd></div>
+        <div><dt>Regulars with a finished story</dt><dd>${guestsDone()} of ${D.guests.length}</dd></div>
+      </dl>
+      <p class="set-help">“Make somewhere people want to come back to.” Same time tomorrow?</p>
+      <div class="row">
+        <button class="btn btn-soft" data-action="go-title-modal">Title Screen</button>
+        <button class="btn btn-primary" data-action="close-modal">Keep the café open</button>
+      </div>`);
   }
 
   /* ---------- Dialogue ---------- */
   const TEXT_SPEED = { slow: 42, normal: 22, instant: 0 };
+  const CAFE_BGS = { 'cafe-day': 'day', 'cafe-night': 'night', morning: 'day' };   // morning scenes happen at the café
+
+  function setSceneBg(bg) {
+    $('#dlg-bg').className = 'dlg-bg bg-' + bg;
+    const cv = $('#dlg-canvas');
+    if (CAFE_BGS[bg]) { cv.hidden = false; window.Cafe.still(cv, save.decor, CAFE_BGS[bg]); } else cv.hidden = true;
+  }
 
   function playScene(id, onEnd) {
     const sc = D.scenes[id];
-    preload(sc.char, D.expressions.map((e) => `bust-${e}`));
-    G.dlg = { id, sc, node: null, onEnd, typing: false, timer: null, expr: null, full: '' };
-    const bg = $('#dlg-bg');
-    bg.className = 'dlg-bg bg-' + sc.bg;
-    const cv = $('#dlg-canvas');
-    if (sc.bg.startsWith('cafe')) { cv.hidden = false; window.Cafe.still(cv, save.decor, sc.bg === 'cafe-night' ? 'night' : 'day'); } else cv.hidden = true;
+    G.dlg = { id, sc, node: null, onEnd, typing: false, timer: null, focus: null, expr: null, full: '', opts: [], meterChar: isCast(sc.char) ? sc.char : null };
+    setSceneBg(sc.bg);
     $('#dlg-portrait').innerHTML = '';
+    $('#dlg-face').hidden = true;
     show('dialogue');
     renderMeter();
     goNode('start');
@@ -655,50 +989,78 @@
   }
 
   function renderMeter(pulse) {
-    const ch = charById[G.dlg.sc.char];
-    const a = aff(ch.id);
+    const m = $('#dlg-meter');
+    const id = G.dlg && G.dlg.meterChar;
+    m.hidden = !id;
+    if (!id) return;
+    const ch = charById[id];
+    const a = aff(id);
     const nt = nextTier(a);
-    $('#dlg-meter').innerHTML = `${S.icons.heart}<div class="dm-main"><div class="dm-top"><b>${ch.name}</b><span>${tierOf(a).name}</span></div>
+    m.innerHTML = `${S.icons.heart}<div class="dm-main"><div class="dm-top"><b>${ch.name}</b><span>${tierOf(a).name}</span></div>
       <div class="meter meter-sm"><span style="--to:${a}%"></span></div></div><span class="dm-num">${a}${nt ? `<small>/${nt.min}</small>` : ''}</span>`;
-    if (pulse) { const m = $('#dlg-meter'); m.classList.remove('pulse'); void m.offsetWidth; m.classList.add('pulse'); }
+    if (pulse) { m.classList.remove('pulse'); void m.offsetWidth; m.classList.add('pulse'); }
   }
 
-  function setExpr(expr) {
+  function setPortrait(id, expr) {
     const d = G.dlg;
-    if (d.expr === expr) return;
-    d.expr = expr;
-    const p = $('#dlg-portrait');
-    p.innerHTML = posed(d.sc.char, 'talk', expr);
+    if (d.focus === id && d.expr === expr) return;
+    d.focus = id; d.expr = expr;
+    $('#dlg-portrait').innerHTML = posed(id, 'talk', expr);
+  }
+
+  function applySet(set) {
+    if (!set) return;
+    if (set.flag) save.flags[set.flag] = true;
+    if (set.usual) save.usual = set.usual;
+    if (set.menuName) save.menuName = set.menuName;
+    if (set.route) save.route = { char: G.dlg.sc.char, type: set.route };
   }
 
   function goNode(nid) {
     const d = G.dlg;
-    let node = d.sc.nodes[nid];
-    while (node && node.branch) {
-      const hit = node.branch.find((b) => save.flags[b.flag]);
-      node = d.sc.nodes[hit ? hit.next : node.next];
+    for (let guard = 0; guard < 60; guard++) {
+      const ctx = storyCtx();
+      const node = d.sc.nodes[nid];
+      if (!node) { endScene(); return; }
+      if (node.if && !node.if(ctx)) {
+        if (node.next) { nid = node.next; continue; }
+        endScene(); return;
+      }
+      if (node.branch) {
+        const hit = node.branch.find((b) => (b.flag ? save.flags[b.flag] : b.if ? b.if(ctx) : false));
+        nid = hit ? hit.next : node.next;
+        if (!nid) { endScene(); return; }
+        continue;
+      }
+      showNode(node, ctx);
+      return;
     }
-    showNode(node);
+    endScene();
   }
 
-  /* who: 'narr', 'player' (your own line, echoed from a choice) or a character id. */
-  function showNode(node) {
-    G.dlg.node = node;
+  /* who: 'narr', 'player' (your own line, echoed from a choice) or a cast/guest id. */
+  function showNode(node, ctx = storyCtx()) {
+    const d = G.dlg;
+    d.node = node;
+    if (node.bg) setSceneBg(node.bg);
+    applySet(node.set);
     const narr = node.who === 'narr', mine = node.who === 'player';
-    if (node.expr && !mine) setExpr(node.expr);
-    $('#dlg-portrait').classList.toggle('dim', narr || mine);
+    const focus = !narr && !mine ? node.who : narr ? node.show : null;
+    if (focus) setPortrait(focus, node.expr || 'neutral');
+    $('#dlg-portrait').classList.toggle('dim', (narr && !node.show) || mine);
     const nameEl = $('#dlg-name');
     nameEl.hidden = narr;
-    nameEl.textContent = narr ? '' : mine ? playerName() : charById[node.who].name;
+    nameEl.textContent = narr ? '' : mine ? playerName() : whoName(node.who);
     const face = $('#dlg-face');
     face.hidden = !mine;
     if (mine) face.innerHTML = playerPortrait(node.expr);
     $('#dlg-box').classList.toggle('narr', narr);
     $('#dlg-box').classList.toggle('mine', mine);
+    d.opts = (node.choices || []).filter((c) => (!c.met || isMet(c.met)) && (!c.if || c.if(ctx)));
     $('#dlg-choices').innerHTML = '';
     $('#screen-dialogue').classList.remove('choosing');
     $('#dlg-next').hidden = true;
-    typewrite(fill(node.text));
+    typewrite(fill(typeof node.text === 'function' ? node.text(ctx) : node.text));
   }
 
   function typewrite(text) {
@@ -720,11 +1082,11 @@
   }
 
   function onTyped() {
-    const node = G.dlg.node;
-    if (node.choices) {
+    const d = G.dlg;
+    if (d.opts.length) {
       const box = $('#dlg-choices');
       $('#screen-dialogue').classList.add('choosing');
-      box.innerHTML = node.choices.map((c, i) => `<button class="btn choice" data-action="choose" data-i="${i}"><kbd>${i + 1}</kbd><span>${esc(fill(c.text))}</span></button>`).join('');
+      box.innerHTML = d.opts.map((c, i) => `<button class="btn choice" data-action="choose" data-i="${i}"><kbd>${i + 1}</kbd><span>${esc(fill(c.text))}</span></button>`).join('');
       const first = box.querySelector('button');
       if (first) first.focus({ preventScroll: true });
     } else {
@@ -736,30 +1098,42 @@
     const d = G.dlg;
     if (!d) return;
     if (d.typing) { clearInterval(d.timer); $('#dlg-text').textContent = d.full; d.typing = false; onTyped(); return; }
-    if (d.node.choices) return;
+    if (d.opts.length) return;
     Sfx.play('tap');
-    if (d.node.end) endScene();
+    if (d.node.end || !d.node.next) endScene();
     else goNode(d.node.next);
+  }
+
+  function resolveTarget(to, sc) {
+    if (to === 'closest') return closest();
+    if (to === 'helper') return save.lastShift && save.lastShift.helper;
+    return to || sc.affTo || sc.char;
   }
 
   function choose(i) {
     const d = G.dlg;
-    if (!d || d.typing || !d.node.choices) return;
-    const c = d.node.choices[i];
+    if (!d || d.typing || !d.opts.length) return;
+    const c = d.opts[i];
     if (!c) return;
     if (c.flag) save.flags[c.flag] = true;
+    applySet(c.set);
     if (c.aff) {
-      const got = addAffection(d.sc.char, c.aff);
-      d.gained = (d.gained || 0) + got;
-      const fx = $('#dlg-fx');
-      if (got > 0) { Sfx.play('heart'); floatFx(fx, `${S.icons.heart}+${got}`, 50, 34, 'fx-aff'); burstHearts(fx, 4, 50, 40); }
-      else if (got < 0) { Sfx.play('wrong'); floatFx(fx, `${S.icons.heartEmpty}${got}`, 50, 34, 'fx-aff down'); }
-      renderMeter(true);
+      const target = resolveTarget(c.to, d.sc);
+      if (isCast(target)) {
+        const got = addAffection(target, c.aff);
+        d.meterChar = target;
+        const fx = $('#dlg-fx');
+        if (got > 0) { Sfx.play('heart'); floatFx(fx, `${S.icons.heart}+${got}`, 50, 34, 'fx-aff'); burstHearts(fx, 4, 50, 40); }
+        else if (got < 0) { Sfx.play('wrong'); floatFx(fx, `${S.icons.heartEmpty}${got}`, 50, 34, 'fx-aff down'); }
+        renderMeter(true);
+      } else Sfx.play('tap');
     } else Sfx.play('tap');
     persist();
-    // you say the line you picked, then the scene carries on
-    const tone = c.you || (c.aff >= 6 ? 'blush' : c.aff >= 4 ? 'happy' : c.aff >= 1 ? 'smile' : c.aff < 0 ? 'sad' : 'neutral');
-    showNode({ who: 'player', expr: tone, text: c.text, next: c.next });
+    if (c.say === false) { goNode(c.next); } else {
+      // you say the line you picked, then the scene carries on
+      const tone = c.you || (c.aff >= 6 ? 'blush' : c.aff >= 4 ? 'happy' : c.aff >= 1 ? 'smile' : c.aff < 0 ? 'sad' : 'neutral');
+      showNode({ who: 'player', expr: tone, text: c.text, next: c.next });
+    }
     $('#dlg-box').focus({ preventScroll: true });
   }
 
@@ -767,6 +1141,11 @@
     const d = G.dlg;
     clearInterval(d.timer);
     G.dlg = null;
+    const sc = d.sc;
+    if (sc.aff) {
+      const target = resolveTarget(sc.affTo, sc);
+      if (isCast(target)) addAffection(target, sc.aff);
+    }
     persist();
     if (d.onEnd) d.onEnd(d);
   }
@@ -785,6 +1164,45 @@
         ${met ? `<div class="meter meter-sm"><span style="--to:${a}%"></span></div><div class="g-tier">${tierOf(a).name}</div>` : ''}
       </button>`;
     }).join('');
+    $('#guest-grid').innerHTML = D.guests.map((g) => {
+      const met = save && guestState(g.id).met;
+      const st = save ? guestState(g.id) : { beat: 0 };
+      const total = g.beats.length;
+      return `<button class="g-card ${met ? '' : 'locked'}" data-action="guest-detail" data-id="${g.id}" aria-label="${met ? g.name : 'Unmet regular'}">
+        <div class="g-portrait guest">${portrait(g.id, { kind: 'full', locked: !met })}${met ? '' : `<span class="g-lock">${S.icons.lock}</span>`}</div>
+        <div class="g-name">${met ? g.name : '???'}</div>
+        <div class="g-sub">${met ? esc(g.blurb) : `Visits the café from day ${g.from}.`}</div>
+        ${met ? `<div class="g-tier">Story ${Math.min(st.beat, total)}/${total}</div>` : ''}
+      </button>`;
+    }).join('');
+  }
+
+  function openGuest(id) {
+    const g = guestById[id];
+    const st = guestState(id);
+    if (!st.met) {
+      openModal(`
+        <h2 id="modal-title">Unmet regular</h2>
+        <div class="detail-portrait locked">${portrait(id, { kind: 'full', locked: true })}</div>
+        <p class="detail-hint">${S.icons.lock} Someone from Bellflower Lane. They start dropping by on day ${g.from}.</p>
+        <button class="btn btn-primary btn-block" data-action="close-modal">Close</button>`);
+      return;
+    }
+    const total = g.beats.length;
+    const heard = g.beats.slice(0, Math.min(st.beat, total));
+    openModal(`
+      <div class="detail-head" style="--accent:#f6cdd3">
+        <div class="detail-portrait" id="detail-portrait">${portrait(id, { kind: 'full' })}</div>
+      </div>
+      <h2 id="modal-title">${esc(g.name)}</h2>
+      <p class="detail-title">Regular of Bellflower Lane</p>
+      <p>${esc(g.blurb)}</p>
+      <dl class="detail-dl">
+        <div><dt>Favorite</dt><dd class="fav">${S.cup(recipeById[g.favorite], 1, { steam: false })}<span>${esc(recipeName(g.favorite))}</span></dd></div>
+        <div><dt>Story</dt><dd>${Math.min(st.beat, total)} of ${total} chapters${guestDone(id) ? ' · complete' : ''}</dd></div>
+      </dl>
+      ${heard.length ? `<blockquote class="quote">“${esc(fill(heard[heard.length - 1].text))}”</blockquote>` : ''}
+      <button class="btn btn-primary btn-block" data-action="close-modal">Close</button>`);
   }
 
   let turnTimer = null;
@@ -825,12 +1243,13 @@
         <div class="expr-row" role="group" aria-label="Expressions">${D.expressions.map((e) => `<button class="chip-btn chip-sm" data-action="detail-expr" data-id="${id}" data-expr="${e}" aria-pressed="false">${e}</button>`).join('')}</div>
       </div>
       <h2 id="modal-title">${c.name} <small>· ${c.age}</small></h2>
-      <p class="detail-title">${esc(c.title)} · ${esc(c.role)}</p>
+      <p class="detail-title">${esc(c.title)}</p>
+      <p>${esc(c.role)}.</p>
       <p>${esc(c.personality)}</p>
+      <p class="detail-note">${esc(c.detail)}</p>
       <dl class="detail-dl">
-        <div><dt>Likes</dt><dd>${esc(c.likes)}</dd></div>
-        <div><dt>Favorite order</dt><dd class="fav">${S.cup(fav, 1, { steam: false })}<span>${esc(fav.name)}</span></dd></div>
-        <div><dt>Story</dt><dd>${seen} of ${route.length} scenes seen</dd></div>
+        <div><dt>Favorite order</dt><dd class="fav">${S.cup(fav, 1, { steam: false })}<span>${esc(recipeName(fav.id))}</span></dd></div>
+        <div><dt>Story</dt><dd>${seen} of ${route.length} evenings seen</dd></div>
       </dl>
       <div class="detail-aff">${S.icons.heart}<div class="meter"><span style="--to:${a}%"></span></div><span>${a}/100</span></div>
       <p class="detail-tier">${tierOf(a).name}${nt ? ` · ${nt.min - a} more to ${nt.name}` : ' · max level'}</p>
@@ -844,9 +1263,8 @@
   /* ---------- Shop ---------- */
   function renderShop() {
     $('#shop-coins').innerHTML = coinHtml(save.coins);
-    const lumi = charById.lumi;
-    $('#shop-note').textContent = `Décor makes the café cozier: every piece raises your tips. Current bonus: +${Math.round(decorBonus() * 100)}%.` +
-      (!isMet('lumi') ? ` A stylish customer is waiting for ${lumi.unlock.count} pieces (${save.decor.length}/${lumi.unlock.count}).` : '');
+    $('#shop-note').textContent = `Décor makes the café cozier: every piece raises your tips. Current bonus: +${Math.round(decorBonus() * 100)}%. ` +
+      (isMet('sora') ? '' : 'Someone with an eye for presentation notices cafés that make an effort.');
     $('#shop-list').innerHTML = D.decor.map((d) => {
       const owned = save.decor.includes(d.id);
       const can = save.coins >= d.price;
@@ -868,8 +1286,6 @@
     persist();
     Sfx.play('coin');
     toast(`${d.name} placed in the café!`, 'coin');
-    const lumi = charById.lumi;
-    if (!isMet('lumi') && save.decor.length === lumi.unlock.count) setTimeout(() => toast('Word is spreading… someone fashionable might visit on your next shift.', 'unlock'), 600);
     scene.set(save.decor, 'day');
     renderShop();
     const btn = $(`[data-preview="${id}"]`);
@@ -906,7 +1322,7 @@
         <div class="set-row"><span>Text speed</span><div class="segs" role="group" aria-label="Text speed">${speedBtn('slow', 'Slow')}${speedBtn('normal', 'Normal')}${speedBtn('instant', 'Instant')}</div></div>
       </div>
       <p class="set-help">Controls: tap buttons, or use the keyboard. <kbd>Enter</kbd>/<kbd>Space</kbd> advance dialogue, <kbd>1</kbd>–<kbd>4</kbd> pick options and choices, hold <kbd>Space</kbd> to pour, <kbd>Esc</kbd> goes back.</p>
-      ${save ? `<button class="btn btn-block" data-action="edit-player">${playerPortrait('smile').replace('art-player', 'art-player art-inline')} Change name or look</button>` : ''}
+      ${save && save.player ? `<button class="btn btn-block" data-action="edit-player">${playerPortrait('smile').replace('art-player', 'art-player art-inline')} Change name, look or pronouns</button>` : ''}
       <div class="row">
         <button class="btn btn-soft" data-action="go-title-modal">Title Screen</button>
         <button class="btn btn-primary" data-action="close-modal">Done</button>
@@ -926,17 +1342,19 @@
   /* ---------- Create / edit the protagonist ---------- */
   let createTimer = null;
   function openCreate({ onDone, onCancel, edit = false }) {
-    const current = (save && save.player) || { name: '', look: D.player.looks[0].id };
-    G.create = { onDone, onCancel, look: current.look };
-    $('#create-heading').textContent = edit ? 'Change your name or look' : 'Who\'s taking over the café?';
+    const cur = (save && save.player) || { name: '', look: D.player.looks[0].id, pronouns: 'they' };
+    G.create = { onDone, onCancel, look: cur.look, pronouns: cur.pronouns || 'they' };
+    $('#create-heading').textContent = edit ? 'Change your name, look or pronouns' : 'Who’s minding the café?';
     $('#create-submit').textContent = edit ? 'Save' : 'Open the café';
-    $('#player-name').value = current.name || '';
+    $('#player-name').value = cur.name || '';
     $('#look-options').innerHTML = D.player.looks.map((l) => `
       <label class="look-card">
-        <input type="radio" name="look" value="${l.id}" ${l.id === current.look ? 'checked' : ''}>
+        <input type="radio" name="look" value="${l.id}" ${l.id === cur.look ? 'checked' : ''}>
         <span class="look-art">${playerPortrait('smile', l)}</span>
         <span class="look-name">${esc(l.label)}</span>
       </label>`).join('');
+    $('#pronoun-options').innerHTML = D.player.pronouns.map((p) => `
+      <label class="pron-chip"><input type="radio" name="pron" value="${p.id}" ${p.id === G.create.pronouns ? 'checked' : ''}><span>${esc(p.label)}</span></label>`).join('');
     D.player.looks.forEach((l) => preload(l.id, Array.from({ length: l.frames }, (_, i) => `turn-${i}`)));
     previewLook();
     show('create');
@@ -964,12 +1382,16 @@
     Sfx.play('select');
     previewLook();
   });
+  $('#pronoun-options').addEventListener('change', (e) => {
+    if (e.target.name !== 'pron') return;
+    G.create.pronouns = e.target.value;
+    Sfx.play('tap');
+  });
   $('#create-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const name = $('#player-name').value.replace(/[{}<>]/g, '').trim().slice(0, 16);
-    const look = G.create.look;
     if (!save) save = freshSave();
-    save.player = { name, look };
+    save.player = { name, look: G.create.look, pronouns: G.create.pronouns };
     persist();
     Sfx.play('unlock');
     closeCreate((c) => c.onDone && c.onDone());
@@ -981,23 +1403,18 @@
       openCreate({ onDone: startDay, onCancel: () => { renderTitle(); show('title'); } });
       return;
     }
-    if (save.phase === 'intro') {
-      meet('milo');
-      playScene('intro', () => { save.phase = 'hub'; persist(); beginShift(); });
-      return;
-    }
-    if (save.phase === 'evening') { renderEvening(); show('evening'); return; }
-    beginShift();
+    continueGame();
   }
 
   function continueGame() {
     if (!save) return;
-    if (save.phase === 'intro') { startDay(); return; }
-    if (save.phase === 'evening') { renderEvening(); show('evening'); return; }
-    G.phase = 'hub'; G.shift = null;
-    scene.set(save.decor, 'day');
-    show('cafe');
-    renderCafe();
+    if (save.phase === 'intro') {
+      meet('milo');
+      playScene('opening', () => { save.phase = 'hub'; persist(); enterHub(); });
+      return;
+    }
+    if (save.phase === 'evening') { enterEvening(); return; }
+    enterHub();
   }
 
   function goTitle() {
@@ -1033,34 +1450,40 @@
       const to = G.returnTo || 'title';
       if (to === 'title') renderTitle();
       if (to === 'cafe') renderCafe();
-      if (to === 'evening') renderEvening();
-      show(to);
+      if (to === 'evening') showEveningPick();
+      else show(to);
     },
     'open-cafe': beginShift,
+    'set-helper': (el) => {
+      save.helper = save.helper === el.dataset.id ? null : el.dataset.id;
+      persist(); Sfx.play('select'); renderCafe();
+    },
     'take-order': takeOrder,
     'make-drink': openDrink,
-    'next-customer': () => { G.shift.index++; nextCustomer(false); },
+    'next-customer': advanceCustomer,
     pick: (el) => pickOption(el.dataset.id),
     'goto-step': (el) => { G.drink.step = +el.dataset.step; Sfx.play('tap'); renderDrink(); },
     'restart-drink': () => { G.drink = { sel: {}, step: 0, level: 0, pouring: false, pouredOnce: false }; Sfx.play('tap'); renderDrink(); },
     serve,
-    'results-continue': () => { renderEvening(); show('evening'); },
+    'results-continue': enterEvening,
     'evening-pick': (el) => {
       const id = el.dataset.id;
       const n = nextSceneFor(id);
       playScene(n.scene, () => {
         if (n.isNew) save.scenesSeen[id] = (save.scenesSeen[id] || 0) + 1;
+        else save.chats[id] = (save.chats[id] || 0) + 1;
         finishDay();
       });
     },
     'evening-skip': finishDay,
     choose: (el) => choose(+el.dataset.i),
     'char-detail': (el) => openCharacter(el.dataset.id),
+    'guest-detail': (el) => openGuest(el.dataset.id),
     'detail-art': (el) => {
       const { id, kind } = el.dataset;
       stopTurnaround();
       if (kind === 'turn') startTurnaround(id);
-      else $('#detail-portrait').innerHTML = portrait(id, { kind: kind === 'chibi' ? 'chibi' : kind, expr: 'happy' });
+      else $('#detail-portrait').innerHTML = portrait(id, { kind, expr: 'happy' });
       markDetailChip(el);
     },
     'detail-expr': (el) => {
@@ -1119,14 +1542,15 @@
       return;
     }
     const onButton = document.activeElement && document.activeElement.tagName === 'BUTTON';
+    if (G.screen === 'create') return;
     if (G.screen === 'dialogue') {
       if ((e.key === 'Enter' || e.key === ' ') && !onButton) { e.preventDefault(); advance(); return; }
-      if (/^[1-3]$/.test(e.key)) { choose(+e.key - 1); return; }
+      if (/^[1-4]$/.test(e.key)) { choose(+e.key - 1); return; }
     }
     if (G.screen === 'drink' && G.drink) {
       const stepId = D.steps[G.drink.step].id;
       if (stepId === 'pour' && e.key === ' ') { e.preventDefault(); if (!e.repeat) startPour(); return; }
-      if (stepId !== 'pour' && /^[1-4]$/.test(e.key)) {
+      if (stepId !== 'pour' && /^[1-5]$/.test(e.key)) {
         const o = D.ingredients[stepId][+e.key - 1];
         if (o) pickOption(o.id);
         return;
@@ -1148,7 +1572,7 @@
     last = t;
     const c = current();
     if (c && !G.modal && (G.phase === 'arrive' || G.phase === 'ordered') && (G.screen === 'cafe' || G.screen === 'drink')) {
-      c.patience = Math.max(0, c.patience - dt / D.economy.patienceSeconds);
+      c.patience = Math.max(0, c.patience - (dt / D.economy.patienceSeconds) * drainFactor());
       updatePatience();
     }
     const d = G.drink;
@@ -1168,4 +1592,14 @@
   renderTitle();
   show('title');
   requestAnimationFrame(tick);
+
+  // Handy for testing and tinkering from the console: window.PP.skipTo(day)
+  window.PP = {
+    get save() { return save; },
+    evening() { enterEvening(); },
+    skipTo(day) { if (!save) return; save.day = day; persist(); enterHub(); },
+    storyCtx, fill,
+    recipe() { const c = current(); return c ? recipeById[c.drink] : null; },
+    customers() { return G.shift ? G.shift.customers.map((c) => c.who + ':' + c.drink) : []; },
+  };
 })();

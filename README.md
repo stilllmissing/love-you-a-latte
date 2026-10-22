@@ -1,72 +1,114 @@
 # Purrfect Pour
 
-A cozy café-management and romance visual-novel prototype. You've inherited **The Velvet Paw**, a neighborhood cat café. Brew drinks for the regulars, decorate the café, and get to know its catboy cast. All characters are adults (21+), and the romance stays sweet and non-explicit.
+*Some people take their coffee sweet. Others take a little time.*
+
+A cozy café-management and romance visual novel. You're minding **The Velvet Paw**, a tiny café on Bellflower Lane, for thirty days while your aunt Rosalie takes the trip she keeps postponing. The neighborhood's Bellflower Night Market is on day 30, the café hosts it, and four catboys keep finding reasons to stay after closing. All characters are adults (21+). Romance is sweet and non-explicit, and every route is open whatever your protagonist's gender.
 
 ## Run it
 
-There's no build step and there are no dependencies. Serve the folder with any static server and open it on a phone or in a narrow browser window:
+No build step and no dependencies. Serve the folder with any static server and open it on a phone or in a narrow browser window:
 
 ```sh
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-Opening `index.html` directly from disk also works. The Google Fonts pixel and body faces are optional: without a connection the game falls back to system fonts.
+Opening `index.html` from disk also works. The Google Fonts faces are optional; without a connection the game falls back to system fonts.
 
-## How to play
+## How a day works
 
-1. **Start Day.** Pick your look and name (blank means everyone calls you Y/N), meet Milo, then the café opens. You can change both later in ⚙ Settings.
-2. **Take Order.** Every customer is one of the cast. They usually order their favorite, and on busier days some come back for a second, different drink. Read the ticket. It names the cup, base, milk, syrup and topping.
-3. **Make Drink.** Pick each ingredient, then **hold to pour** and let go inside the pink band. A perfect pour and a quick serve earn bigger tips.
-4. **Serve.** The ticket is checked: correct orders pay full price plus a tip, and cast members gain affection.
-5. **Closing Time.** See earnings, tips, satisfaction stars and affection changes.
-6. **Evening.** Spend time with someone. Story scenes unlock as affection grows, and your choices raise or lower affection and change later dialogue.
-7. **Upgrades.** Spend coins on décor. Each piece shows up in the café and raises tips. Owning two pieces brings in a new character.
+1. **Morning.** Story scenes and little moments play first. After day 15 you also choose who's helping that day (see below).
+2. **Shift.** Customers walk up. Take the order, then make the drink: pick cup, base, milk, syrup and topping, then **hold to pour** and let go inside the pink band. Correct orders pay the price plus a tip, and cast members gain affection. Some customers have scenes of their own as they arrive or leave.
+3. **Closing time.** Earnings, tips, satisfaction stars, affection.
+4. **Evening.** A story event if the calendar has one, otherwise spend time with someone. Each person has a run of story evenings (unlocked by affection and day) and short repeatable chats in between.
+5. **Upgrades.** Spend coins on décor. It appears in the café and raises tips.
 
-### Controls
+### The calendar
+
+| Day | What happens |
+| --- | --- |
+| 1 | “The Keys”: Rosalie’s note, Milo at the door. First shift: Juniper’s “Your Usual” |
+| 2 | Atlas delivers a refrigerator (“Heavy Lifting”) |
+| 3 | Riven fixes the speaker (“The Speaker”) |
+| 4–6 | Sora walks in (“Presentation Matters”), after a few days or once you own some décor |
+| 10 | “Rain Check”: a downpour traps everyone; pick who to sit beside |
+| 15 | “Too Many Orders”: a rush hour; whoever is closest to you follows you into the back room. That evening the group builds a staff system |
+| 16+ | Choose a helper each morning: Milo (wider pink band), Riven (customers wait longer), Atlas (a pastry with every order), Sora (+15% tips) |
+| 30 | The Bellflower Night Market, then a private confession from whoever you're closest to (if affection is high enough), then the ending |
+
+Endings: **romance** (a quiet first moment with your partner), **waiting** (you asked for more time) or **friendship** (the group photo). All end with “Same time tomorrow?” and you can keep the café open afterward.
+
+### The cast
+
+| | Age | Role | Signature drink |
+| --- | --- | --- | --- |
+| Milo | 23 | Weekend barista, aspiring illustrator | Honey oat latte |
+| Riven | 25 | Record-store clerk and musician | Iced americano (plus a strawberry pastry “for later”) |
+| Atlas | 27 | Florist’s delivery assistant, amateur baker | Strawberry latte, extra foam |
+| Sora | 24 | Fashion stylist, event planner | Lavender fog |
+
+Eight neighborhood **regulars** each carry a small story across the month: Juniper, Dante, Mina, Santiago, Noor, Beau, Cleo and Rowan. Serve them to hear the next chapter; finishing one can pay off (Noor adds tips, Beau restores the Pastel Chairs), and the finished ones show up at the Night Market.
+
+## Controls
 
 | Action | Touch / mouse | Keyboard |
 | --- | --- | --- |
 | Buttons | Tap | Tab to focus, Enter or Space |
-| Pick an ingredient | Tap an option | `1` to `4` |
+| Pick an ingredient | Tap an option | `1`–`5` |
 | Pour | Press and hold **Hold to Pour** | Hold `Space` |
 | Serve | **Serve ♥** | `Enter` |
 | Advance dialogue | Tap the scene or text box | `Enter` or `Space` |
-| Dialogue choice | Tap a choice | `1` to `3` |
+| Dialogue choice | Tap a choice | `1`–`4` |
 | Back / settings | Back button, ⚙ | `Esc` |
 
-Settings (⚙) has sound, reduce motion, text speed, and **Reset save data** (tucked inside a disclosure).
-
-## Cast
-
-| Character | Age | Style | Favorite order | Unlock |
-| --- | --- | --- | --- | --- |
-| Milo | 24 | Shy, soft-colored sketcher | Oat Milk Latte | Intro |
-| Riven | 26 | Emo musician, secretly tender | Midnight Double | Visits on day 1 |
-| Atlas | 29 | Big, warm, easily flustered baker | Strawberry Cloud | Visits on day 1 |
-| Lumi | 25 | Fashion-forward stylist | Blossom Matcha | Own 2 décor pieces |
+⚙ Settings has sound, reduce motion, text speed, **Change name, look or pronouns**, and **Reset save data** (tucked in a disclosure). Progress saves to `localStorage`.
 
 ## Project layout
 
 | File | Purpose |
 | --- | --- |
-| `index.html` | Screen markup: title, café, drink station, results, evening, dialogue, gallery, upgrades |
+| `index.html` | Screen markup |
 | `css/style.css` | All styling, animation and responsive rules |
-| `js/data.js` | **Game content**: ingredients, recipes, cast, protagonist, décor, story scenes, routes, first-day shift |
-| `assets/characters/<id>/` | Cast art: `bust.webp` (gallery, evening cards), `full.webp` (profile), `bust-<expression>.webp` (dialogue), `chibi-<expression>.webp` (café counter, title), `turn-0…7.webp` (turnaround; `turn-6` is the walking frame) |
-| `assets/source/` | The original art: two group sheets and one expression sheet per character |
-| `tools/slice-art.py` | Re-slices the sheets into `assets/characters/` (`pip install pillow numpy scipy`, then `python3 tools/slice-art.py`) |
-| `js/sprites.js` | Procedural pixel art for drink cups and UI icons, output as SVG |
-| `js/cafe.js` | The café scene on a 160×120 pixel canvas, plus décor drawing reused for shop previews |
-| `js/audio.js` | Small synthesized sound effects (Web Audio, no files) |
-| `js/game.js` | Engine: screens, shift loop, drink making, scoring, dialogue runner, gallery, shop, save/load |
+| `js/data.js` | Ingredients, recipes, cast, protagonist (looks, pronouns), recurring guests, staff tasks, décor, economy |
+| `js/story.js` | **The story**: every scene, the calendar of events, scripted customers, little moments |
+| `js/game.js` | Engine: screens, calendar, shifts, drink making, scene runner, relationships, gallery, shop, save/load |
+| `js/cafe.js` | The café scene on a 160×120 pixel canvas, plus décor drawing |
+| `js/sprites.js` | Drink cups and UI icons drawn from pixel grids |
+| `js/audio.js` | Small synthesized sound effects (Web Audio) |
+| `assets/characters/<id>/` | Cast: `bust.webp`, `full.webp`, `bust-<expression>.webp`, `chibi-<expression>.webp`, `turn-0…7.webp`. Guests: `full.webp` and three busts. Player looks: `player-a…l` |
+| `assets/source/` | The original art sheets |
+| `tools/slice-art.py` | Re-slices the cast and protagonist sheets (`pip install pillow numpy scipy`, then `python3 tools/slice-art.py`) |
+| `tools/slice-assets.py` | Re-slices the regulars sheets (`python3 tools/slice-assets.py`) |
 
-### Adding content
+Console helpers for testing: `PP.skipTo(day)`, `PP.evening()`, `PP.save`.
 
-- **Recipe:** add an entry to `recipes` in `js/data.js` using ingredient ids from `ingredients`.
-- **Character:** add to `characters` with `lines` and a `routes` entry, and add a 4×6 expression sheet as `assets/source/<id>-sheet.png` (same layout as the others), then run `tools/slice-art.py`. A scene node's `expr` picks the bust: `neutral`, `happy`, `blush`, `flustered`, `surprised`, `sad`, `pensive` or `smirk`.
-- **Protagonist:** `player` in `js/data.js` lists the twelve looks. Two have a turnaround and bust expressions (cut from `assets/source/player-sheet.png`); the other ten are front-facing with a neutral bust (from `assets/source/player-looks.png`). You appear behind the counter in the café. Write `{name}` in any line to use the player's name. When the player picks a choice, they say it with an expression based on the affection it gives, or set `you: '<expression>'` on the choice.
-- **Scene:** add to `scenes`. Nodes support `who`, `expr`, `text`, `next`, `end`, `choices` (`{ text, aff, flag, next }`) and `branch` (`[{ flag, next }]`, where the first matching flag wins).
-- **Décor:** add to `decor`, then draw it in `js/cafe.js` (the `decor` object, `drawBackground`, and the `preview` sizes).
+### Writing story
 
-Progress saves to `localStorage` under `purrfect-pour:save:v1`. Settings save separately, so resetting the save keeps them.
+Scenes are objects in `js/story.js`. Their text is plain data, so a writer can edit lines without touching the engine.
+
+```js
+my_scene: {
+  title: 'Doesn’t Mean Anything', char: 'riven', bg: 'cafe-night',   // bg: cafe-day, cafe-night, morning, dusk, stars
+  aff: 2,                                // affection given to `char` when the scene ends
+  nodes: {
+    start: { who: 'narr', show: 'riven', expr: 'neutral', text: 'He labels the cords.', next: 'n2' },
+    n2: { who: 'riven', expr: 'smirk', text: 'It doesn’t mean anything, {name}.', next: 'c1' },
+    c1: {
+      who: 'narr', text: 'He waits.',
+      choices: [
+        { text: 'Thank you.', aff: 5, next: 'end' },                       // you say this line
+        { text: 'Sit beside him', say: false, flag: 'sat', next: 'end' },   // an action: not spoken
+      ],
+    },
+    end: { who: 'riven', expr: 'blush', text: '...You’re welcome.', end: true },
+  },
+},
+```
+
+- **Speakers:** `who` is `narr`, `player` or a cast/guest id. `show` puts a character on screen during narration. `expr` is `neutral, happy, blush, flustered, surprised, sad, pensive` or `smirk` for the cast (guests fall back to the closest of their three).
+- **Branching:** `branch: [{ flag: 'x', next }, { if: (c) => c.aff('milo') > 30, next }]` (first match wins, else `next`). Any node can have `if` to be skipped. Choices can have `met: 'sora'` or `if`.
+- **Effects:** `set: { flag, usual, menuName, route }` on a node or choice. Choices can aim affection with `to: 'closest' | 'helper' | '<id>'`.
+- **Text tokens:** `{name}` `{NAME}` `{they}` `{them}` `{their}` `{theirs}` `{themself}` `{theyre}` (capitalize for sentence starts), `{closest}` `{partner}` `{waiting}` `{helper}` `{usual}` `{ausual}`. Text can also be a function of the story context.
+- **Scheduling:** add to `events` (a day and `morning`/`evening`), `scripted` (a customer with an `intro`/`outro` scene), `routes` (a character's evening scenes), `chats`, or `moments` (little scenes gated by a `when` function).
+
+Content in `data.js` is similar: add a recipe to `recipes`, a regular to `guests` (art folder plus a list of `beats`), or décor to `decor` (and draw it in `js/cafe.js`).

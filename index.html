@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Purrfect Pour</title>
-<meta name="description" content="A cozy café management and romance visual novel prototype set in The Velvet Paw.">
+<meta name="description" content="A cozy café management and romance visual novel. Run The Velvet Paw on Bellflower Lane for thirty days.">
 <meta name="theme-color" content="#fbe2e1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,9 +18,9 @@
   <section class="screen" id="screen-title" aria-labelledby="title-heading">
     <div class="title-sky" aria-hidden="true"></div>
     <div class="title-inner">
-      <p class="eyebrow">The Velvet Paw presents</p>
+      <p class="eyebrow">The Velvet Paw · Bellflower Lane</p>
       <h1 id="title-heading" class="game-title"><span>Purrfect</span><span>Pour</span></h1>
-      <p class="tagline">Brew lattes. Win hearts. Keep the café cozy.</p>
+      <p class="tagline">Some people take their coffee sweet. Others take a little time.</p>
       <div class="title-cast" id="title-cast" aria-hidden="true"></div>
       <div class="title-menu">
         <button class="btn btn-primary btn-lg" data-action="start-day" id="btn-start">Start Day</button>
@@ -36,8 +36,8 @@
   <!-- PROTAGONIST -->
   <section class="screen" id="screen-create" aria-labelledby="create-heading">
     <form class="create-inner" id="create-form" novalidate>
-      <p class="eyebrow">The Velvet Paw · New owner</p>
-      <h2 id="create-heading">Who's taking over the café?</h2>
+      <p class="eyebrow">The Velvet Paw · Thirty days</p>
+      <h2 id="create-heading">Who’s minding the café?</h2>
       <div class="create-preview" id="create-preview" aria-hidden="true"></div>
       <fieldset class="look-picker">
         <legend>Look</legend>
@@ -48,6 +48,11 @@
         <input id="player-name" name="player-name" data-autofocus type="text" maxlength="16" autocomplete="nickname" placeholder="Y/N" spellcheck="false">
         <small>Leave it blank and everyone calls you Y/N.</small>
       </label>
+      <fieldset class="pronoun-picker">
+        <legend>Pronouns</legend>
+        <div class="pronoun-options" id="pronoun-options"></div>
+        <small>Every romance route is open whatever you choose.</small>
+      </fieldset>
       <div class="row">
         <button type="button" class="btn btn-soft" data-action="create-cancel" id="create-cancel">Back</button>
         <button type="submit" class="btn btn-primary btn-lg" id="create-submit">Open the café</button>
@@ -133,6 +138,9 @@
     </header>
     <p class="sheet-note">All characters are adults (21+). Tap a card for their profile.</p>
     <div class="gallery-grid" id="gallery-grid"></div>
+    <h3 class="sheet-sub">Regulars of Bellflower Lane</h3>
+    <p class="sheet-note">Serve them to hear their stories.</p>
+    <div class="gallery-grid" id="guest-grid"></div>
   </section>
 
   <!-- SHOP -->
@@ -154,6 +162,7 @@
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
 <script src="js/data.js"></script>
+<script src="js/story.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/cafe.js"></script>
 <script src="js/audio.js"></script>
