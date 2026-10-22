@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Purrfect Pour</title>
+<meta name="description" content="A cozy café management and romance visual novel prototype set in The Velvet Paw.">
+<meta name="theme-color" content="#fbe2e1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Nunito:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE -->
+  <section class="screen" id="screen-title" aria-labelledby="title-heading">
+    <div class="title-sky" aria-hidden="true"></div>
+    <div class="title-inner">
+      <p class="eyebrow">The Velvet Paw presents</p>
+      <h1 id="title-heading" class="game-title"><span>Purrfect</span><span>Pour</span></h1>
+      <p class="tagline">Brew lattes. Win hearts. Keep the café cozy.</p>
+      <div class="title-cast" id="title-cast" aria-hidden="true"></div>
+      <div class="title-menu">
+        <button class="btn btn-primary btn-lg" data-action="start-day" id="btn-start">Start Day</button>
+        <button class="btn" data-action="continue" id="btn-continue">Continue</button>
+        <button class="btn btn-soft" data-action="open-gallery">Character Gallery</button>
+      </div>
+      <p class="title-save" id="title-save"></p>
+      <p class="fineprint">All characters are adults (21+). Romance is sweet and non-explicit.</p>
+    </div>
+    <button class="icon-btn corner-btn" data-action="open-settings" aria-label="Settings"><span aria-hidden="true">⚙</span></button>
+  </section>
+
+  <!-- CAFÉ -->
+  <section class="screen" id="screen-cafe" aria-label="Café">
+    <header class="hud">
+      <div class="hud-chip" id="hud-day">Day 1</div>
+      <div class="hud-chip hud-coins" id="hud-coins" aria-live="polite"></div>
+      <div class="hud-chip hud-queue" id="hud-queue"></div>
+      <button class="icon-btn" data-action="open-settings" aria-label="Settings"><span aria-hidden="true">⚙</span></button>
+    </header>
+    <div class="scene" id="cafe-scene">
+      <div class="scene-inner">
+        <canvas class="scene-layer" id="cafe-bg" aria-hidden="true"></canvas>
+        <div class="scene-layer customers" id="cafe-customers"></div>
+        <canvas class="scene-layer scene-fg" id="cafe-fg" aria-hidden="true"></canvas>
+        <div class="fx-layer" id="cafe-fx" aria-hidden="true"></div>
+      </div>
+      <div class="bubble" id="cafe-bubble" hidden></div>
+    </div>
+    <div class="panel" id="cafe-panel" aria-live="polite"></div>
+    <nav class="bottom-nav" aria-label="Café menu">
+      <button class="nav-btn" data-action="open-shop"><span class="nav-ico" aria-hidden="true">✿</span>Upgrades</button>
+      <button class="nav-btn" data-action="open-gallery"><span class="nav-ico" aria-hidden="true">♥</span>Gallery</button>
+      <button class="nav-btn" data-action="go-title"><span class="nav-ico" aria-hidden="true">⌂</span>Title</button>
+    </nav>
+  </section>
+
+  <!-- DRINK MAKING -->
+  <section class="screen" id="screen-drink" aria-label="Make the drink">
+    <header class="ticket" id="drink-ticket"></header>
+    <div class="station">
+      <div class="cup-stage" id="cup-stage"></div>
+      <div class="gauge" id="pour-gauge" aria-hidden="true">
+        <div class="gauge-zone"></div>
+        <div class="gauge-fill" id="gauge-fill"></div>
+        <div class="gauge-max"></div>
+      </div>
+    </div>
+    <ol class="steps" id="drink-steps" aria-label="Preparation steps"></ol>
+    <div class="options" id="drink-options"></div>
+  </section>
+
+  <!-- END OF DAY -->
+  <section class="screen" id="screen-results" aria-labelledby="results-heading">
+    <div class="results-card" id="results-card"></div>
+  </section>
+
+  <!-- EVENING CHOICE -->
+  <section class="screen" id="screen-evening" aria-labelledby="evening-heading">
+    <div class="evening-inner" id="evening-inner"></div>
+  </section>
+
+  <!-- DIALOGUE -->
+  <section class="screen" id="screen-dialogue" aria-label="Story scene">
+    <div class="dlg-bg" id="dlg-bg"><canvas id="dlg-canvas" aria-hidden="true"></canvas></div>
+    <header class="dlg-top">
+      <div class="dlg-meter" id="dlg-meter"></div>
+      <button class="icon-btn" data-action="open-settings" aria-label="Settings"><span aria-hidden="true">⚙</span></button>
+    </header>
+    <div class="dlg-portrait" id="dlg-portrait"></div>
+    <div class="dlg-fx" id="dlg-fx" aria-hidden="true"></div>
+    <div class="dlg-bottom">
+      <div class="dlg-choices" id="dlg-choices"></div>
+      <div class="dlg-box" id="dlg-box" role="button" tabindex="0" aria-label="Dialogue. Tap or press Enter to continue.">
+        <div class="dlg-name" id="dlg-name"></div>
+        <p class="dlg-text" id="dlg-text" aria-live="polite"></p>
+        <span class="dlg-next" id="dlg-next" aria-hidden="true">▼</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALLERY -->
+  <section class="screen" id="screen-gallery" aria-labelledby="gallery-heading">
+    <header class="sheet-head">
+      <button class="btn btn-sm" data-action="back">← Back</button>
+      <h2 id="gallery-heading">Character Gallery</h2>
+    </header>
+    <p class="sheet-note">All characters are adults (21+). Tap a card for their profile.</p>
+    <div class="gallery-grid" id="gallery-grid"></div>
+  </section>
+
+  <!-- SHOP -->
+  <section class="screen" id="screen-shop" aria-labelledby="shop-heading">
+    <header class="sheet-head">
+      <button class="btn btn-sm" data-action="back">← Back</button>
+      <h2 id="shop-heading">Café Upgrades</h2>
+      <div class="hud-chip hud-coins" id="shop-coins"></div>
+    </header>
+    <p class="sheet-note" id="shop-note">Décor makes the café cozier. Every piece raises your tips.</p>
+    <div class="shop-list" id="shop-list"></div>
+  </section>
+
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title" id="modal-card"></div>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="js/data.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/cafe.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
