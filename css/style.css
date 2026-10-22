@@ -192,6 +192,7 @@ small { font-size: 0.78em; opacity: 0.85; }
 .cust .pose { height: 100%; }
 .cust .art, .cust .sprite { height: 100%; width: auto; display: block; }
 .cust.walk-in { animation: walkIn 0.55s cubic-bezier(.2,.8,.3,1.1) both; }
+.cust.walk-in .cust-sprite, .cust.walk-out .cust-sprite { animation: step 0.18s ease-in-out infinite; }
 .cust.walk-out { animation: walkOut 0.42s ease-in both; }
 .cust.react .cust-sprite { animation: hop 0.5s ease 2, breathe 3s ease-in-out 1s infinite; }
 
@@ -487,7 +488,7 @@ small { font-size: 0.78em; opacity: 0.85; }
 .dm-num small { opacity: 0.6; }
 /* Bust stands on the dialogue box; while choices are up it shrinks above them so the face stays visible. */
 .dlg-portrait {
-  --ph: min(62vh, 560px);
+  --ph: min(46vh, 430px);
   position: absolute; left: 0; right: 0; z-index: 1;
   top: calc(100% - 110px - env(safe-area-inset-bottom, 0px) - var(--ph));
   height: var(--ph);
@@ -495,7 +496,7 @@ small { font-size: 0.78em; opacity: 0.85; }
   pointer-events: none;
   transition: filter 0.3s, top 0.35s ease, height 0.35s ease;
 }
-#screen-dialogue.choosing .dlg-portrait { --ph: min(40vh, 400px); top: 70px; }
+#screen-dialogue.choosing .dlg-portrait { --ph: min(34vh, 320px); top: 70px; }
 .dlg-portrait .pose { height: 100%; }
 .dlg-portrait .art { height: 100%; width: auto; max-width: 96vw; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 6px 0 rgba(43, 34, 64, 0.3)); }
 .dlg-portrait .sprite { width: 100%; height: auto; display: block; filter: drop-shadow(0 6px 0 rgba(43, 34, 64, 0.35)); }
@@ -603,6 +604,7 @@ small { font-size: 0.78em; opacity: 0.85; }
   font: 800 0.85rem/1 var(--font-body); background: var(--paper); border: 2.5px solid var(--cocoa);
 }
 .chip-btn.on { background: var(--gold); }
+.chip-btn.chip-sm { min-height: 36px; padding: 5px 10px; font-size: 0.78rem; }
 .detail-title { color: var(--steel); font-weight: 800; }
 .detail-dl { margin: 0; display: grid; gap: 6px; }
 .detail-dl div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px; align-items: center; }
@@ -717,6 +719,7 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
 @keyframes tailFast { 50% { transform: rotate(-14deg); } }
 @keyframes earL { 0%, 88%, 100% { transform: none; } 92% { transform: rotate(-14deg); } 96% { transform: rotate(4deg); } }
 @keyframes earR { 0%, 80%, 100% { transform: none; } 84% { transform: rotate(14deg); } 88% { transform: rotate(-4deg); } }
+@keyframes step { 50% { transform: translateY(-2.5%); } }
 @keyframes shake { 20%, 60% { transform: translateX(-1.5%); } 40%, 80% { transform: translateX(1.5%); } }
 @keyframes sway { 50% { transform: rotate(-1.5deg); } }
 @keyframes emoteIn { from { transform: scale(0) rotate(-20deg); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -747,7 +750,7 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
   .station { min-height: 130px; }
   .cup-stage { width: min(32vw, 130px); }
   .gauge { height: 112px; }
-  .dlg-portrait { --ph: 54vh; }
+  .dlg-portrait { --ph: 44vh; }
   .title-inner { gap: 10px; padding-top: 48px; }
 }
 @media (min-width: 520px) {

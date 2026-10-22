@@ -156,9 +156,10 @@
     },
   ];
 
-  /* Character art lives in assets/characters/<id>-{bust,full,chibi}.webp
-   * (sliced from the sheets in assets/source by tools/slice-art.py). */
-  const artKinds = ['bust', 'full', 'chibi'];
+  /* Expressions a scene node's `expr` can use. Each cast member has a bust and a
+   * chibi image for every one (assets/characters/<id>/, cut from the sheets in
+   * assets/source by tools/slice-art.py). */
+  const expressions = ['neutral', 'happy', 'blush', 'flustered', 'surprised', 'sad', 'pensive', 'smirk'];
 
   /* ---------- Neighborhood regulars (non-romanceable customers) ----------
    * Regulars have no illustrations yet, so they use procedural pixel sprites. */
@@ -217,7 +218,7 @@
       title: 'Sketches After Closing', char: 'milo', bg: 'cafe-night',
       nodes: {
         start: { who: 'narr', expr: 'neutral', text: 'After closing, you find Milo at the corner table, bent over a sketchbook. Pencil shavings, an empty oat latte cup.', next: 'n2' },
-        n2: { who: 'milo', expr: 'flustered', text: 'Ah! I didn\'t hear you. I was just… it\'s nothing. Doodles.', next: 'c1' },
+        n2: { who: 'milo', expr: 'surprised', text: 'Ah! I didn\'t hear you. I was just… it\'s nothing. Doodles.', next: 'c1' },
         c1: {
           who: 'narr', expr: 'blush', text: 'He hugs the sketchbook to his chest. His tail curls around the chair leg.',
           choices: [
@@ -263,7 +264,7 @@
         g2: { who: 'milo', expr: 'blush', text: 'I finished the drawing of you. It\'s in my bag. I\'ll show you after. If I\'m brave enough.', next: 'n2' },
         g3: { who: 'milo', expr: 'flustered', text: 'I\'ve never asked anyone to an art gallery before. Is this weird? It\'s weird.', next: 'n2' },
         n2: { who: 'narr', expr: 'neutral', text: 'You wander between watercolors. He stops at a small painting of a café window in the rain.', next: 'n3' },
-        n3: { who: 'milo', expr: 'neutral', text: 'This one\'s why I started drawing. It made a rainy day feel safe.', next: 'c1' },
+        n3: { who: 'milo', expr: 'pensive', text: 'This one\'s why I started drawing. It made a rainy day feel safe.', next: 'c1' },
         c1: {
           who: 'narr', expr: 'blush', text: 'He glances at you, then back at the painting.',
           choices: [
@@ -294,9 +295,9 @@
         },
         a1: { who: 'riven', expr: 'blush', text: '…Huh. Okay. Thanks.', next: 'n3' },
         b1: { who: 'riven', expr: 'smirk', text: 'Bold. Fine. It\'s a band you\'ve never heard of. That\'s the point. He holds out one earbud.', next: 'n3' },
-        c1r: { who: 'riven', expr: 'neutral', text: 'Cold\'s honest. It doesn\'t pretend to be anything else.', next: 'n3' },
+        c1r: { who: 'riven', expr: 'pensive', text: 'Cold\'s honest. It doesn\'t pretend to be anything else.', next: 'n3' },
         n3: { who: 'narr', expr: 'neutral', text: 'The city hums. For a while neither of you speaks, and it isn\'t awkward.', next: 'n4' },
-        n4: { who: 'riven', expr: 'sad', text: 'Everyone thinks the eyeliner means I\'m scary. Mostly it means I\'m tired.', next: 'c2' },
+        n4: { who: 'riven', expr: 'pensive', text: 'Everyone thinks the eyeliner means I\'m scary. Mostly it means I\'m tired.', next: 'c2' },
         c2: {
           who: 'narr', expr: 'neutral', text: 'His tail flicks once against the railing.',
           choices: [
@@ -393,7 +394,7 @@
             { text: 'Let him finish his frosting rose.', aff: 5, next: 'a3' },
           ],
         },
-        a1: { who: 'atlas', expr: 'flustered', text: 'Y-you- thank you. I\'m going to need a minute.', next: 'n3' },
+        a1: { who: 'atlas', expr: 'surprised', text: 'Y-you- thank you. I\'m going to need a minute.', next: 'n3' },
         a2: { who: 'atlas', expr: 'happy', text: 'Ha! I\'m leaving it. It\'s a badge of honor.', next: 'n3' },
         a3: { who: 'atlas', expr: 'happy', text: 'Here. First rose is for you. That\'s the rule. I just made the rule.', next: 'n3' },
         n3: { who: 'atlas', expr: 'blush', text: 'I used to think I had to look tough all the time. Around you I forget to.', next: 'c2' },
@@ -426,7 +427,7 @@
         a2: { who: 'lumi', expr: 'neutral', text: 'Spring romance. Blossoms, lace, little paper hearts. Your café has a soft heart. Let\'s show it off.', next: 'n3' },
         a3: { who: 'lumi', expr: 'blush', text: 'A collaborator? Mm. I like you more every minute.', next: 'n3' },
         n3: { who: 'narr', expr: 'happy', text: 'An hour later the window glows with paper blossoms and ribbon. People slow down on the sidewalk to look.', next: 'n4' },
-        n4: { who: 'lumi', expr: 'blush', text: 'People think fashion is shallow. It isn\'t. It\'s how I tell people who I am before I say a word.', next: 'c2' },
+        n4: { who: 'lumi', expr: 'pensive', text: 'People think fashion is shallow. It isn\'t. It\'s how I tell people who I am before I say a word.', next: 'c2' },
         c2: {
           who: 'narr', expr: 'neutral', text: 'He tucks a strand of lavender hair behind one ear.',
           choices: [
@@ -436,7 +437,7 @@
           ],
         },
         d1: { who: 'lumi', expr: 'smirk', text: '"I\'m here to be adored, and also to fix your window." Accurate, no?', next: 'end' },
-        d2: { who: 'lumi', expr: 'flustered', text: '…Oh. That landed. Give me a second.', next: 'end' },
+        d2: { who: 'lumi', expr: 'surprised', text: '…Oh. That landed. Give me a second.', next: 'end' },
         d3: { who: 'lumi', expr: 'blush', text: 'The version in pajamas with a face mask on? You\'ll have to earn that, darling.', next: 'end' },
         end: { who: 'lumi', expr: 'happy', text: 'Same time next week. Bring snacks. Strawberry ones.', end: true },
       },
@@ -522,7 +523,7 @@
   ];
 
   window.GAME_DATA = {
-    steps, ingredients, recipes, tiers, characters, artKinds, regulars, regularLines, decor, scenes, routes, firstShift,
+    steps, ingredients, recipes, tiers, characters, expressions, regulars, regularLines, decor, scenes, routes, firstShift,
     economy: { startCoins: 25, patienceSeconds: 45, pourRate: 0.62 },
   };
 })();

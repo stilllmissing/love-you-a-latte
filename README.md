@@ -53,8 +53,8 @@ Settings (⚙) has sound, reduce motion, text speed, and **Reset save data** (tu
 | `index.html` | Screen markup: title, café, drink station, results, evening, dialogue, gallery, upgrades |
 | `css/style.css` | All styling, animation and responsive rules |
 | `js/data.js` | **Game content**: ingredients, recipes, cast, regulars, décor, story scenes, routes, first-day shift |
-| `assets/characters/` | Cast art per character: `<id>-bust.webp` (dialogue, gallery, evening cards), `<id>-full.webp` (profile), `<id>-chibi.webp` (café counter, title) |
-| `assets/source/` | The original character sheets |
+| `assets/characters/<id>/` | Cast art: `bust.webp` (gallery, evening cards), `full.webp` (profile), `bust-<expression>.webp` (dialogue), `chibi-<expression>.webp` (café counter, title), `turn-0…7.webp` (turnaround; `turn-6` is the walking frame) |
+| `assets/source/` | The original art: two group sheets and one expression sheet per character |
 | `tools/slice-art.py` | Re-slices the sheets into `assets/characters/` (`pip install pillow numpy scipy`, then `python3 tools/slice-art.py`) |
 | `js/sprites.js` | Procedural pixel art for the non-romanceable regulars, cups and icons, output as SVG |
 | `js/cafe.js` | The café scene on a 160×120 pixel canvas, plus décor drawing reused for shop previews |
@@ -64,7 +64,7 @@ Settings (⚙) has sound, reduce motion, text speed, and **Reset save data** (tu
 ### Adding content
 
 - **Recipe:** add an entry to `recipes` in `js/data.js` using ingredient ids from `ingredients`.
-- **Character:** add to `characters` with `lines` and a `routes` entry, and put `<id>-bust.webp`, `<id>-full.webp` and `<id>-chibi.webp` in `assets/characters/`. A scene node's `expr` (`happy`, `blush`, `flustered`, `sad`, `smirk`) plays a pose and an emote over the art.
+- **Character:** add to `characters` with `lines` and a `routes` entry, and add a 4×6 expression sheet as `assets/source/<id>-sheet.png` (same layout as the others), then run `tools/slice-art.py`. A scene node's `expr` picks the bust: `neutral`, `happy`, `blush`, `flustered`, `surprised`, `sad`, `pensive` or `smirk`.
 - **Scene:** add to `scenes`. Nodes support `who`, `expr`, `text`, `next`, `end`, `choices` (`{ text, aff, flag, next }`) and `branch` (`[{ flag, next }]`, where the first matching flag wins).
 - **Décor:** add to `decor`, then draw it in `js/cafe.js` (the `decor` object, `drawBackground`, and the `preview` sizes).
 

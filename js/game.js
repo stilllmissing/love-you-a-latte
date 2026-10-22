@@ -68,19 +68,30 @@
     toast(`New character unlocked: <b>${charById[id].name}</b>`, 'unlock');
   }
 
-  /* Cast members have illustrations (bust, full body, chibi); regulars fall back
-   * to procedural pixel sprites. Expressions are shown with an emote and a pose. */
-  const artSrc = (id, kind) => `assets/characters/${id}-${kind}.webp`;
+  /* Cast art lives in assets/characters/<id>/: a large bust and full body, eight
+   * bust and eight chibi expressions, and an eight-frame turnaround. Regulars
+   * fall back to procedural pixel sprites. */
+  const artSrc = (id, file) => `assets/characters/${id}/${file}.webp`;
+  const artFile = (kind, expr) => (kind === 'chibi' || kind === 'talk'
+    ? `${kind === 'talk' ? 'bust' : 'chibi'}-${D.expressions.includes(expr) ? expr : 'neutral'}`
+    : kind);
   function portrait(who, { kind = 'bust', expr = 'neutral', locked = false } = {}) {
     if (charById[who]) {
-      return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, kind)}" alt="" draggable="false">`;
+      return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, artFile(kind, expr))}" alt="" draggable="false">`;
     }
     return S.character(regById[who].look, expr);
   }
-  const EMOTES = { happy: '♪', blush: '♡', flustered: '!!', sad: '…', smirk: '✧' };
+  /* Chibi faces are small at café size, so reactions there also get an emote. */
+  const EMOTES = { happy: '♪', blush: '♡', flustered: '!!', surprised: '!', sad: '…', smirk: '✧' };
   const emote = (expr) => (EMOTES[expr] ? `<span class="emote emote-${expr}" aria-hidden="true">${EMOTES[expr]}</span>` : '');
   function posed(who, kind, expr) {
-    return `<div class="pose expr-${expr}">${portrait(who, { kind, expr })}${emote(expr)}</div>`;
+    return `<div class="pose expr-${expr}">${portrait(who, { kind, expr })}${kind === 'chibi' ? emote(expr) : ''}</div>`;
+  }
+  function preload(id, files) { if (charById[id]) files.forEach((f) => { new Image().src = artSrc(id, f); }); }
+  const WALK_FRAME = 'turn-6';   // side view facing left: customers enter from the right and leave to the left
+  function showWalking(el, who) {
+    const img = el && el.querySelector('.art');
+    if (img && charById[who]) { img.src = artSrc(who, WALK_FRAME); el.querySelectorAll('.emote').forEach((e) => e.remove()); }
   }
   const whoName = (who) => (charById[who] || regById[who]).name;
 
@@ -155,7 +166,7 @@
     const cast = $('#title-cast');
     cast.innerHTML = D.characters.map((c, i) => {
       const met = isMet(c.id);
-      return `<div class="title-sprite" style="--i:${i}">${portrait(c.id, { kind: 'chibi', locked: !met })}</div>`;
+      return `<div class="title-sprite" style="--i:${i}">${portrait(c.id, { kind: 'chibi', expr: met ? 'happy' : 'neutral', locked: !met })}</div>`;
     }).join('');
     const cont = $('#btn-continue');
     cont.disabled = !save;
@@ -189,6 +200,7 @@
       customers: buildShift().map((c) => Object.assign(c, { patience: 1, isCast: !!charById[c.who] })),
       index: 0, sales: 0, tips: 0, sat: [], perfect: 0, correct: 0, affGain: {},
     };
+    G.shift.customers.forEach((c) => preload(c.who, [WALK_FRAME, ...D.expressions.map((e) => `chibi-${e}`)]));
     scene.set(save.decor, 'day');
     show('cafe');
     nextCustomer(true);
@@ -204,12 +216,22 @@
       c.patience = 1;
       renderCafe('walk-in');
       Sfx.play('tap');
+      if (c.isCast && !settings.reduceMotion) {
+        const el = $('.cust');
+        showWalking(el, c.who);
+        setTimeout(() => { if (current() === c && G.phase === 'arrive') renderCafe(); }, 560);
+      }
     };
     if (first) go();
     else {
       const el = $('.cust');
       $('#cafe-bubble').hidden = true;
-      if (el && !settings.reduceMotion) { el.classList.add('walk-out'); setTimeout(go, 420); } else go();
+      if (el && !settings.reduceMotion) {
+        const prev = G.shift.customers[G.shift.index - 1];
+        if (prev) showWalking(el, prev.who);
+        el.classList.add('walk-out');
+        setTimeout(go, 420);
+      } else go();
     }
   }
 
@@ -603,6 +625,7 @@
 
   function playScene(id, onEnd) {
     const sc = D.scenes[id];
+    preload(sc.char, D.expressions.map((e) => `bust-${e}`));
     G.dlg = { id, sc, node: null, onEnd, typing: false, timer: null, expr: null, full: '' };
     const bg = $('#dlg-bg');
     bg.className = 'dlg-bg bg-' + sc.bg;
@@ -629,7 +652,7 @@
     if (d.expr === expr) return;
     d.expr = expr;
     const p = $('#dlg-portrait');
-    p.innerHTML = posed(d.sc.char, 'bust', expr);
+    p.innerHTML = posed(d.sc.char, 'talk', expr);
   }
 
   function goNode(nid) {
@@ -737,6 +760,20 @@
     }).join('');
   }
 
+  let turnTimer = null;
+  function startTurnaround(id) {
+    let frame = 0;
+    const show = () => { const p = $('#detail-portrait'); if (p) p.innerHTML = portrait(id, { kind: `turn-${frame}` }); frame = (frame + 1) % 8; };
+    preload(id, Array.from({ length: 8 }, (_, i) => `turn-${i}`));
+    show();
+    turnTimer = setInterval(show, settings.reduceMotion ? 1200 : 420);
+  }
+  function stopTurnaround() { clearInterval(turnTimer); turnTimer = null; }
+  function markDetailChip(el) {
+    $$('#modal-card .chip-btn').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-pressed', String(b === el)); });
+    Sfx.play('tap');
+  }
+
   function openCharacter(id) {
     const c = charById[id];
     const met = isMet(id);
@@ -757,7 +794,8 @@
     openModal(`
       <div class="detail-head" style="--accent:${c.color}">
         <div class="detail-portrait" id="detail-portrait">${portrait(id, { kind: 'full' })}</div>
-        <div class="expr-row" role="group" aria-label="Artwork">${[['full', 'Full body'], ['bust', 'Portrait'], ['chibi', 'Chibi']].map(([k, l]) => `<button class="chip-btn ${k === 'full' ? 'on' : ''}" data-action="detail-art" data-id="${id}" data-kind="${k}" aria-pressed="${k === 'full'}">${l}</button>`).join('')}</div>
+        <div class="expr-row" role="group" aria-label="Artwork">${[['full', 'Full body'], ['bust', 'Portrait'], ['turn', 'Turnaround ↻'], ['chibi', 'Chibi']].map(([k, l]) => `<button class="chip-btn ${k === 'full' ? 'on' : ''}" data-action="detail-art" data-id="${id}" data-kind="${k}" aria-pressed="${k === 'full'}">${l}</button>`).join('')}</div>
+        <div class="expr-row" role="group" aria-label="Expressions">${D.expressions.map((e) => `<button class="chip-btn chip-sm" data-action="detail-expr" data-id="${id}" data-expr="${e}" aria-pressed="false">${e}</button>`).join('')}</div>
       </div>
       <h2 id="modal-title">${c.name} <small>· ${c.age}</small></h2>
       <p class="detail-title">${esc(c.title)} · ${esc(c.role)}</p>
@@ -824,6 +862,7 @@
     if (!G.modal) return;
     const { onClose, restore } = G.modal;
     G.modal = null;
+    stopTurnaround();
     $('#modal').hidden = true;
     if (onClose) onClose();
     if (restore && restore.focus && document.contains(restore)) restore.focus({ preventScroll: true });
@@ -928,9 +967,16 @@
     choose: (el) => choose(+el.dataset.i),
     'char-detail': (el) => openCharacter(el.dataset.id),
     'detail-art': (el) => {
-      $('#detail-portrait').innerHTML = portrait(el.dataset.id, { kind: el.dataset.kind });
-      $$('.expr-row .chip-btn').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-pressed', String(b === el)); });
-      Sfx.play('tap');
+      const { id, kind } = el.dataset;
+      stopTurnaround();
+      if (kind === 'turn') startTurnaround(id);
+      else $('#detail-portrait').innerHTML = portrait(id, { kind: kind === 'chibi' ? 'chibi' : kind, expr: 'happy' });
+      markDetailChip(el);
+    },
+    'detail-expr': (el) => {
+      stopTurnaround();
+      $('#detail-portrait').innerHTML = portrait(el.dataset.id, { kind: 'talk', expr: el.dataset.expr });
+      markDetailChip(el);
     },
     'detail-line': (el) => { $('#detail-quote').textContent = `"${pick(charById[el.dataset.id].lines.gallery)}"`; Sfx.play('blip'); },
     buy: (el) => buy(el.dataset.id),
@@ -1027,7 +1073,7 @@
   }
 
   /* ---------- Boot ---------- */
-  D.characters.forEach((c) => D.artKinds.forEach((k) => { new Image().src = artSrc(c.id, k); }));
+  D.characters.forEach((c) => preload(c.id, ['bust', 'chibi-neutral', 'chibi-happy']));
   applySettings();
   renderTitle();
   show('title');

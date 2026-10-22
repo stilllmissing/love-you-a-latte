@@ -3,11 +3,17 @@
     pip install pillow numpy scipy
     python3 tools/slice-art.py
 
-Sheets (left to right: Milo, Riven, Atlas, Lumi):
-  cast-fullbody.png    one row of four full-body figures
-  cast-bust-chibi.png  top row of four busts, bottom row of four chibis
+Group sheets (left to right: Milo, Riven, Atlas, Lumi):
+  cast-fullbody.png    one row of four full-body figures      -> <id>/full.webp
+  cast-bust-chibi.png  top row of four large busts             -> <id>/bust.webp
+                       (its bottom row of chibis is superseded by the sheets below)
 
-Writes assets/characters/<id>-full.webp, <id>-bust.webp and <id>-chibi.webp.
+Character sheets, <id>-sheet.png, a 4x6 grid:
+  rows 1-2  eight-direction turnaround                         -> <id>/turn-0.webp ... turn-7.webp
+  rows 3-4  chibi expressions                                  -> <id>/chibi-<expression>.webp
+  rows 5-6  bust expressions                                   -> <id>/bust-<expression>.webp
+
+Everything is written under assets/characters/.
 """
 from pathlib import Path
 
@@ -20,22 +26,35 @@ SRC = ROOT / 'assets' / 'source'
 OUT = ROOT / 'assets' / 'characters'
 CAST = ['milo', 'riven', 'atlas', 'lumi']
 ALPHA = 40          # pixels fainter than this count as background
-MAX_H = {'full': 900, 'bust': 560, 'chibi': 360}
+MAX_H = {'full': 900, 'bust': 560}
+
+# Order of the poses on each character sheet, left to right, top to bottom.
+TURN = 8   # turn-0 faces the viewer, turn-2 faces right, turn-4 faces away, turn-6 faces left
+CHIBI_EXPRESSIONS = ['neutral', 'pensive', 'smirk', 'blush', 'sad', 'surprised', 'flustered', 'happy']
+BUST_EXPRESSIONS = ['neutral', 'happy', 'blush', 'sad', 'pensive', 'surprised', 'flustered', 'smirk']
 
 
-def save(rgba, mask, name, kind):
-    """Keep only `mask` pixels, crop to them, scale down, write WebP."""
+def save(rgba, mask, name, kind, max_h=None, defringe=False):
+    """Keep only `mask` pixels, crop to them, scale down, write WebP to <name>/<kind>.webp."""
     img = rgba.copy()
     img[~mask, 3] = 0
+    if defringe:
+        # Soft edge pixels carry the sheet's coloured haze (a red or magenta halo).
+        # Give them the colour of the nearest solid pixel instead.
+        solid = img[:, :, 3] >= 200
+        _, (iy, ix) = nd.distance_transform_edt(~solid, return_indices=True)
+        edge = mask & ~solid
+        img[edge, :3] = img[iy[edge], ix[edge], :3]
     ys, xs = np.where(img[:, :, 3] > 0)
     pad = 2
     y0, y1 = max(ys.min() - pad, 0), min(ys.max() + pad + 1, img.shape[0])
     x0, x1 = max(xs.min() - pad, 0), min(xs.max() + pad + 1, img.shape[1])
     im = Image.fromarray(img[y0:y1, x0:x1])
-    if im.height > MAX_H[kind]:
-        w = round(im.width * MAX_H[kind] / im.height)
-        im = im.resize((w, MAX_H[kind]), Image.LANCZOS)
-    path = OUT / f'{name}-{kind}.webp'
+    max_h = max_h or MAX_H.get(kind)
+    if max_h and im.height > max_h:
+        im = im.resize((round(im.width * max_h / im.height), max_h), Image.LANCZOS)
+    (OUT / name).mkdir(parents=True, exist_ok=True)
+    path = OUT / name / f'{kind}.webp'
     im.save(path, 'WEBP', quality=90, alpha_quality=100, method=6)
     print(f'{path.relative_to(ROOT)}  {im.width}x{im.height}  {path.stat().st_size // 1024} KB')
 
@@ -152,8 +171,31 @@ def main():
     for name, m in zip(CAST, busts):
         save(sheet, m, name, 'bust')
 
-    for name, m in zip(CAST, split_components(sheet, ~top, 4)):
-        save(sheet, m, name, 'chibi')
+    for name in CAST:
+        slice_character_sheet(name)
+
+
+def slice_character_sheet(name):
+    """Cut the 24 poses out of <name>-sheet.png. Each pose is a separate solid
+    shape; the faint coloured haze around them is dropped."""
+    rgba = np.array(Image.open(SRC / f'{name}-sheet.png').convert('RGBA'))
+    alpha = rgba[:, :, 3]
+    solid = alpha >= 160
+    lab, n = nd.label(solid)
+    sizes = nd.sum(solid, lab, range(1, n + 1))
+    poses = list(np.argsort(sizes)[::-1][:24] + 1)
+    centre = {l: nd.center_of_mass(lab == l) for l in poses}
+    poses.sort(key=lambda l: centre[l][0])
+    grid = [sorted(poses[i:i + 4], key=lambda l: centre[l][1]) for i in range(0, 24, 4)]
+    cells = [l for row in grid for l in row]
+    soft = alpha >= ALPHA
+    names = [f'turn-{i}' for i in range(TURN)] + \
+        [f'chibi-{e}' for e in CHIBI_EXPRESSIONS] + [f'bust-{e}' for e in BUST_EXPRESSIONS]
+    for kind, l in zip(names, cells):
+        m = lab == l
+        for _ in range(4):   # take back the soft outline, but not the haze around it
+            m |= nd.binary_dilation(m) & soft
+        save(rgba, m, name, kind, max_h=10_000, defringe=True)
 
 
 if __name__ == '__main__':
