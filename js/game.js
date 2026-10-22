@@ -268,7 +268,7 @@
 
     if (G.phase === 'hub' || !c) {
       const idle = isMet('milo') ? `<div class="cust idle"><div class="cust-sprite">${posed('milo', 'chibi', 'neutral')}</div></div>` : '';
-      cust.innerHTML = idle;
+      cust.innerHTML = staffHtml() + idle;
       bubble.hidden = true;
       const lumi = charById.lumi;
       const hints = [];
@@ -287,7 +287,8 @@
 
     const recipe = recipeById[c.drink];
     const expr = G.phase === 'served' ? c.reaction : !isMet(c.who) ? 'blush' : c.again ? 'happy' : 'neutral';
-    cust.innerHTML = `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'chibi', expr)}</div></div>`;
+    const cheer = G.phase === 'served' && anim === 'react' ? (c.result.correct ? 'cheer' : 'oops') : '';
+    cust.innerHTML = staffHtml(cheer) + `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'chibi', expr)}</div></div>`;
 
     let line;
     if (G.phase === 'arrive') line = c.greetLine || (c.greetLine = customerLine(c, 'greet'));
@@ -331,6 +332,12 @@
         <button class="btn btn-primary btn-lg btn-block" data-action="next-customer">${last ? 'Close Up for the Day' : 'Next Customer'}</button>`;
     }
     updatePatience();
+  }
+
+  /* You, at the espresso machine. */
+  function staffHtml(mood = '') {
+    if (!save || !save.player) return '';
+    return `<div class="staff ${mood}"><img class="art" src="${artSrc(playerLook().id, 'turn-0')}" alt="" draggable="false"></div>`;
   }
 
   function ticketHtml(recipe, showBlurb) {
@@ -930,20 +937,20 @@
         <span class="look-art">${playerPortrait('smile', l)}</span>
         <span class="look-name">${esc(l.label)}</span>
       </label>`).join('');
-    D.player.looks.forEach((l) => preload(l.id, Array.from({ length: 7 }, (_, i) => `turn-${i}`)));
+    D.player.looks.forEach((l) => preload(l.id, Array.from({ length: l.frames }, (_, i) => `turn-${i}`)));
     previewLook();
     show('create');
   }
   function previewLook() {
     clearInterval(createTimer);
     let frame = 0;
-    const look = G.create.look;
+    const look = lookById[G.create.look];
     const draw = () => {
-      $('#create-preview').innerHTML = `<img class="art" src="${artSrc(look, `turn-${frame}`)}" alt="">`;
-      frame = (frame + 1) % 7;
+      $('#create-preview').innerHTML = `<img class="art" src="${artSrc(look.id, `turn-${frame}`)}" alt="">`;
+      frame = (frame + 1) % look.frames;
     };
     draw();
-    if (!settings.reduceMotion) createTimer = setInterval(draw, 520);
+    if (!settings.reduceMotion && look.frames > 1) createTimer = setInterval(draw, 520);
   }
   function closeCreate(cb) {
     clearInterval(createTimer);

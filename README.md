@@ -65,7 +65,7 @@ Settings (⚙) has sound, reduce motion, text speed, and **Reset save data** (tu
 
 - **Recipe:** add an entry to `recipes` in `js/data.js` using ingredient ids from `ingredients`.
 - **Character:** add to `characters` with `lines` and a `routes` entry, and add a 4×6 expression sheet as `assets/source/<id>-sheet.png` (same layout as the others), then run `tools/slice-art.py`. A scene node's `expr` picks the bust: `neutral`, `happy`, `blush`, `flustered`, `surprised`, `sad`, `pensive` or `smirk`.
-- **Protagonist:** `player` in `js/data.js` lists the two looks and their bust expressions (cut from `assets/source/player-sheet.png`). Write `{name}` in any line to use the player's name. When the player picks a choice, they say it with an expression based on the affection it gives, or set `you: '<expression>'` on the choice.
+- **Protagonist:** `player` in `js/data.js` lists the twelve looks. Two have a turnaround and bust expressions (cut from `assets/source/player-sheet.png`); the other ten are front-facing with a neutral bust (from `assets/source/player-looks.png`). You appear behind the counter in the café. Write `{name}` in any line to use the player's name. When the player picks a choice, they say it with an expression based on the affection it gives, or set `you: '<expression>'` on the choice.
 - **Scene:** add to `scenes`. Nodes support `who`, `expr`, `text`, `next`, `end`, `choices` (`{ text, aff, flag, next }`) and `branch` (`[{ flag, next }]`, where the first matching flag wins).
 - **Décor:** add to `decor`, then draw it in `js/cafe.js` (the `decor` object, `drawBackground`, and the `preview` sizes).
 

@@ -200,6 +200,26 @@ def slice_player_sheet():
                 n += 1
 
 
+# Extra protagonist looks: two rows of five front-facing figures, left to right.
+EXTRA_LOOKS = ['player-c', 'player-d', 'player-e', 'player-f', 'player-g',
+               'player-h', 'player-i', 'player-j', 'player-k', 'player-l']
+
+
+def slice_player_looks():
+    """player-looks.png: each look gets turn-0 (full body) and bust-neutral (head and shoulders)."""
+    rgba = np.array(Image.open(SRC / 'player-looks.png').convert('RGBA'))
+    h = rgba.shape[0]
+    top = np.zeros(rgba.shape[:2], bool)
+    top[:h // 2] = True
+    figures = split_components(rgba, top, 5) + split_components(rgba, ~top, 5)
+    for look, m in zip(EXTRA_LOOKS, figures):
+        save(rgba, m, look, 'turn-0', max_h=10_000, defringe=True)
+        ys = np.where(m.any(1))[0]
+        head = m.copy()
+        head[ys.min() + round((ys.max() - ys.min()) * 0.34):] = False
+        save(rgba, head, look, 'bust-neutral', max_h=10_000, defringe=True)
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
 
@@ -248,6 +268,8 @@ if __name__ == '__main__':
     import sys
     if sys.argv[1:] == ['player']:
         slice_player_sheet()
+        slice_player_looks()
     else:
         main()
         slice_player_sheet()
+        slice_player_looks()

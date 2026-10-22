@@ -178,11 +178,23 @@
    * has its own bust expressions; a missing one falls back to the closest match. */
   const player = {
     defaultName: 'Y/N',
+    // `frames` is the number of turnaround images (turn-0 faces front); looks without
+    // an expression sheet only have a neutral bust.
     looks: [
-      { id: 'player-a', label: 'Curly crop',
+      { id: 'player-a', label: 'Curly crop', frames: 7,
         expressions: ['neutral', 'content', 'smile', 'talk', 'happy', 'laugh', 'smirk', 'pensive', 'surprised', 'sad', 'blush'] },
-      { id: 'player-b', label: 'Soft waves',
+      { id: 'player-b', label: 'Soft waves', frames: 7,
         expressions: ['neutral', 'content', 'talk', 'excited', 'smile', 'happy', 'laugh', 'shy', 'sad', 'surprised', 'flustered', 'blush'] },
+      { id: 'player-c', label: 'Bouncy bob', frames: 1, expressions: ['neutral'] },
+      { id: 'player-d', label: 'Honey curls', frames: 1, expressions: ['neutral'] },
+      { id: 'player-e', label: 'Dark curls', frames: 1, expressions: ['neutral'] },
+      { id: 'player-f', label: 'Afro & bow', frames: 1, expressions: ['neutral'] },
+      { id: 'player-g', label: 'Long braids', frames: 1, expressions: ['neutral'] },
+      { id: 'player-h', label: 'Soft curls', frames: 1, expressions: ['neutral'] },
+      { id: 'player-i', label: 'Honey swoop', frames: 1, expressions: ['neutral'] },
+      { id: 'player-j', label: 'Swept curls', frames: 1, expressions: ['neutral'] },
+      { id: 'player-k', label: 'Coils & beard', frames: 1, expressions: ['neutral'] },
+      { id: 'player-l', label: 'Braids & beard', frames: 1, expressions: ['neutral'] },
     ],
     fallback: {
       flustered: ['shy', 'blush'], shy: ['blush'], smirk: ['smile'], pensive: ['content', 'neutral'],

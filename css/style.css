@@ -194,6 +194,11 @@ small { font-size: 0.78em; opacity: 0.85; }
 .cust.walk-in { animation: walkIn 0.55s cubic-bezier(.2,.8,.3,1.1) both; }
 .cust.walk-in .cust-sprite, .cust.walk-out .cust-sprite { animation: step 0.18s ease-in-out infinite; }
 .cust.walk-out { animation: walkOut 0.42s ease-in both; }
+/* The protagonist works behind the counter, by the espresso machine. */
+.staff { position: absolute; left: 7%; bottom: 0; height: 88%; pointer-events: none; transform-origin: 50% 100%; animation: breathe 3.4s ease-in-out infinite; }
+.staff .art { height: 100%; width: auto; }
+.staff.cheer { animation: hop 0.5s ease 2; }
+.staff.oops { animation: shake 0.45s ease 1; }
 .cust.react .cust-sprite { animation: hop 0.5s ease 2, breathe 3s ease-in-out 1s infinite; }
 
 .bubble {
@@ -408,9 +413,9 @@ small { font-size: 0.78em; opacity: 0.85; }
 .create-preview .art { height: 100%; width: auto; }
 .look-picker { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
 .look-picker legend, .name-field > span { font: 800 0.8rem/1 var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--cocoa-soft); margin-bottom: 8px; }
-.look-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.look-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .look-card {
-  position: relative; display: grid; gap: 6px; justify-items: center; padding: 10px; cursor: pointer;
+  position: relative; display: grid; gap: 4px; justify-items: center; padding: 6px; cursor: pointer;
   background: var(--paper); border: 3px solid var(--cocoa); border-radius: 14px; box-shadow: 0 4px 0 var(--cocoa);
 }
 .look-card input { position: absolute; opacity: 0; pointer-events: none; }
@@ -418,7 +423,7 @@ small { font-size: 0.78em; opacity: 0.85; }
 .look-card:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
 .look-art { width: 100%; aspect-ratio: 1; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 10px; background: var(--blossom); }
 .look-art .art { width: 100%; height: auto; }
-.look-name { font: 700 1.05rem/1.1 var(--font-display); }
+.look-name { font: 700 0.85rem/1.1 var(--font-display); text-align: center; }
 .name-field { display: grid; gap: 6px; }
 .name-field input {
   min-height: 52px; padding: 10px 14px; font: 700 1.15rem/1.2 var(--font-body); color: var(--ink);
