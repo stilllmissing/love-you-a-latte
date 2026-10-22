@@ -11,7 +11,6 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const charById = Object.fromEntries(D.characters.map((c) => [c.id, c]));
-  const regById = Object.fromEntries(D.regulars.map((r) => [r.id, r]));
   const recipeById = Object.fromEntries(D.recipes.map((r) => [r.id, r]));
   const decorById = Object.fromEntries(D.decor.map((d) => [d.id, d]));
   const ingName = (step, id) => (D.ingredients[step].find((i) => i.id === id) || {}).name || '—';
@@ -69,17 +68,13 @@
   }
 
   /* Cast art lives in assets/characters/<id>/: a large bust and full body, eight
-   * bust and eight chibi expressions, and an eight-frame turnaround. Regulars
-   * fall back to procedural pixel sprites. */
+   * bust and eight chibi expressions, and an eight-frame turnaround. */
   const artSrc = (id, file) => `assets/characters/${id}/${file}.webp`;
   const artFile = (kind, expr) => (kind === 'chibi' || kind === 'talk'
     ? `${kind === 'talk' ? 'bust' : 'chibi'}-${D.expressions.includes(expr) ? expr : 'neutral'}`
     : kind);
   function portrait(who, { kind = 'bust', expr = 'neutral', locked = false } = {}) {
-    if (charById[who]) {
-      return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, artFile(kind, expr))}" alt="" draggable="false">`;
-    }
-    return S.character(regById[who].look, expr);
+    return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, artFile(kind, expr))}" alt="" draggable="false">`;
   }
   /* Chibi faces are small at café size, so reactions there also get an emote. */
   const EMOTES = { happy: '♪', blush: '♡', flustered: '!!', surprised: '!', sad: '…', smirk: '✧' };
@@ -106,7 +101,7 @@
     const img = el && el.querySelector('.art');
     if (img && charById[who]) { img.src = artSrc(who, WALK_FRAME); el.querySelectorAll('.emote').forEach((e) => e.remove()); }
   }
-  const whoName = (who) => (charById[who] || regById[who]).name;
+  const whoName = (who) => charById[who].name;
 
   /* ---------- Screens ---------- */
   function show(name) {
@@ -191,26 +186,32 @@
 
   /* ---------- Café: shift flow ---------- */
   function buildShift() {
-    if (save.day === 1) return D.firstShift.map((x) => ({ who: x.who, drink: x.drink }));
+    if (save.day === 1) return D.firstShift.map((x) => Object.assign({}, x));
+    // Everyone you've met drops by (plus a newcomer the café has unlocked), mostly
+    // for their favorite. Short shifts fill up with return visits for something new.
     const n = 4 + Math.min(2, Math.floor((save.day - 1) / 2));
     const cast = D.characters.filter((c) => isMet(c.id)).map((c) => c.id);
     D.characters.forEach((c) => {
-      if (!isMet(c.id) && c.unlock.type === 'decor' && save.decor.length >= c.unlock.count) cast.unshift(c.id);
+      if (!isMet(c.id) && c.unlock.type === 'decor' && save.decor.length >= c.unlock.count) cast.push(c.id);
     });
-    const newcomers = cast.filter((id) => !isMet(id));
-    const regulars = shuffle(cast.filter((id) => isMet(id)));
-    const chosen = newcomers.concat(regulars).slice(0, n - 1);
-    const list = chosen.map((id) => ({ who: id, drink: Math.random() < 0.75 ? charById[id].favorite : pick(D.recipes).id }));
-    const regs = shuffle(D.regulars.map((r) => r.id));
-    while (list.length < n) list.push({ who: regs.pop(), drink: pick(D.recipes).id });
-    return shuffle(list);
+    const first = shuffle(cast.filter(isMet)).concat(cast.filter((id) => !isMet(id)));
+    const list = first.map((id) => ({ who: id, drink: Math.random() < 0.75 ? charById[id].favorite : pick(D.recipes).id }));
+    const visitors = shuffle(cast.slice());
+    while (list.length < n && visitors.length) {
+      const id = visitors.pop();
+      const tried = list.filter((c) => c.who === id).map((c) => c.drink);
+      list.push({ who: id, again: true, drink: pick(D.recipes.filter((r) => !tried.includes(r.id))).id });
+    }
+    // newcomers arrive first so they get their introduction; return visits come last
+    const fresh = list.filter((c) => !c.again);
+    return fresh.filter((c) => !isMet(c.who)).concat(fresh.filter((c) => isMet(c.who)), list.filter((c) => c.again));
   }
 
   function beginShift() {
     save.phase = 'shift';
     persist();
     G.shift = {
-      customers: buildShift().map((c) => Object.assign(c, { patience: 1, isCast: !!charById[c.who] })),
+      customers: buildShift().map((c) => Object.assign(c, { patience: 1 })),
       index: 0, sales: 0, tips: 0, sat: [], perfect: 0, correct: 0, affGain: {},
     };
     G.shift.customers.forEach((c) => preload(c.who, [WALK_FRAME, ...D.expressions.map((e) => `chibi-${e}`)]));
@@ -229,7 +230,7 @@
       c.patience = 1;
       renderCafe('walk-in');
       Sfx.play('tap');
-      if (c.isCast && !settings.reduceMotion) {
+      if (!settings.reduceMotion) {
         const el = $('.cust');
         showWalking(el, c.who);
         setTimeout(() => { if (current() === c && G.phase === 'arrive') renderCafe(); }, 560);
@@ -250,14 +251,12 @@
 
   function customerLine(c, kind) { return fill(rawCustomerLine(c, kind)); }
   function rawCustomerLine(c, kind) {
-    if (c.isCast) {
-      const ch = charById[c.who];
-      if (kind === 'greet') return isMet(c.who) ? pick(ch.lines.greet) : ch.lines.meet;
-      if (kind === 'order') return ch.lines.order.replace('{drink}', recipeById[c.drink].name);
-      return pick(ch.lines[kind]);
-    }
-    if (kind === 'order') return D.regularLines.order.replace('{drink}', recipeById[c.drink].name);
-    return pick(D.regularLines[kind]);
+    const ch = charById[c.who];
+    if (kind === 'greet') return c.again ? ch.lines.again : isMet(c.who) ? pick(ch.lines.greet) : ch.lines.meet;
+    if (kind === 'order') return ch.lines.order.replace('{drink}', recipeById[c.drink].name);
+    // reactions to their usual can mention it; anything else gets a general line
+    const fav = c.drink === ch.favorite && ch.lines[kind === 'happy' ? 'favHappy' : 'favWrong'];
+    return pick(fav || ch.lines[kind]);
   }
 
   function renderCafe(anim) {
@@ -287,7 +286,7 @@
     }
 
     const recipe = recipeById[c.drink];
-    const expr = G.phase === 'served' ? c.reaction : c.isCast && !isMet(c.who) ? 'blush' : 'neutral';
+    const expr = G.phase === 'served' ? c.reaction : !isMet(c.who) ? 'blush' : c.again ? 'happy' : 'neutral';
     cust.innerHTML = `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'chibi', expr)}</div></div>`;
 
     let line;
@@ -298,7 +297,7 @@
     bubble.innerHTML = `<b>${esc(whoName(c.who))}</b>${esc(line)}`;
     bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
 
-    const tierTag = c.isCast && isMet(c.who) ? `<span class="tag tag-heart">${S.icons.heart}${tierOf(aff(c.who)).name}</span>` : c.isCast ? '<span class="tag tag-new">New face</span>' : '<span class="tag">Regular</span>';
+    const tierTag = isMet(c.who) ? `<span class="tag tag-heart">${S.icons.heart}${tierOf(aff(c.who)).name}</span>` : '<span class="tag tag-new">New face</span>';
     const patience = `<div class="patience" role="img" aria-label="Patience"><span class="patience-fill"></span></div>`;
 
     if (G.phase === 'arrive') {
@@ -327,7 +326,7 @@
         <div class="chips">
           <span class="chip">${S.icons.coin}+${r.coins} sale</span>
           <span class="chip">${S.icons.coin}+${r.tip} tip</span>
-          ${c.isCast ? `<span class="chip ${r.aff < 0 ? 'chip-down' : 'chip-heart'}">${S.icons.heart}${r.aff >= 0 ? '+' : ''}${r.aff}</span>` : ''}
+          <span class="chip ${r.aff < 0 ? 'chip-down' : 'chip-heart'}">${S.icons.heart}${r.aff >= 0 ? '+' : ''}${r.aff}</span>
         </div>
         <button class="btn btn-primary btn-lg btn-block" data-action="next-customer">${last ? 'Close Up for the Day' : 'Next Customer'}</button>`;
     }
@@ -499,21 +498,17 @@
       tip = Math.max(0, Math.round(tip * (1 + decorBonus())));
     }
     const sat = correct ? clamp(0.6 + 0.25 * pat + (pour === 'perfect' ? 0.15 : pour === 'good' ? 0.08 : 0), 0, 1) : 0.25 + 0.15 * ((5 - wrong.length) / 5);
-    let affDelta = 0;
-    if (c.isCast) {
-      const wasMet = isMet(c.who);
-      if (!wasMet) meet(c.who);
-      const raw = correct ? 3 + (pour === 'perfect' ? 1 : 0) + (c.drink === charById[c.who].favorite ? 1 : 0) : -1;
-      affDelta = addAffection(c.who, raw);
-      G.shift.affGain[c.who] = (G.shift.affGain[c.who] || 0) + affDelta;
-    }
+    if (!isMet(c.who)) meet(c.who);
+    const raw = correct ? 3 + (pour === 'perfect' ? 1 : 0) + (c.drink === charById[c.who].favorite ? 1 : 0) : -1;
+    const affDelta = addAffection(c.who, raw);
+    G.shift.affGain[c.who] = (G.shift.affGain[c.who] || 0) + affDelta;
     save.coins += coins + tip;
     G.shift.sales += coins; G.shift.tips += tip; G.shift.sat.push(sat);
     if (correct) G.shift.correct++;
     if (correct && pour === 'perfect') G.shift.perfect++;
     c.result = { correct, wrong, pour, coins, tip, aff: affDelta, sel: Object.assign({}, d.sel), level: d.level };
-    c.reaction = correct ? (pour === 'perfect' || c.drink === (charById[c.who] || {}).favorite ? (c.who === 'riven' ? 'smirk' : 'blush') : 'happy') : 'sad';
-    if (correct && c.isCast && pour === 'perfect') c.reaction = 'happy';
+    c.reaction = correct ? (pour === 'perfect' || c.drink === charById[c.who].favorite ? (c.who === 'riven' ? 'smirk' : 'blush') : 'happy') : 'sad';
+    if (correct && pour === 'perfect') c.reaction = 'happy';
     c.reactLine = customerLine(c, correct ? 'happy' : 'wrong');
     G.phase = 'served';
     G.drink = null;
@@ -529,7 +524,7 @@
     if (correct) {
       Sfx.play('coin');
       floatFx(fx, `${S.icons.coin}+${coins + tip}`, 50, 30, 'fx-coin');
-      if (c.isCast && affDelta > 0) { setTimeout(() => Sfx.play('heart'), 250); burstHearts(fx, 5, 50, 22); }
+      if (affDelta > 0) { setTimeout(() => Sfx.play('heart'), 250); burstHearts(fx, 5, 50, 22); }
     } else {
       Sfx.play('wrong');
       floatFx(fx, `${S.icons.coin}+${coins}`, 50, 30, 'fx-coin');

@@ -190,7 +190,7 @@ small { font-size: 0.78em; opacity: 0.85; }
 .cust { position: absolute; left: 0; right: 0; bottom: 1%; height: 66%; display: flex; justify-content: center; }
 .cust-sprite { height: 100%; animation: breathe 3s ease-in-out infinite; transform-origin: 50% 100%; }
 .cust .pose { height: 100%; }
-.cust .art, .cust .sprite { height: 100%; width: auto; display: block; }
+.cust .art { height: 100%; width: auto; display: block; }
 .cust.walk-in { animation: walkIn 0.55s cubic-bezier(.2,.8,.3,1.1) both; }
 .cust.walk-in .cust-sprite, .cust.walk-out .cust-sprite { animation: step 0.18s ease-in-out infinite; }
 .cust.walk-out { animation: walkOut 0.42s ease-in both; }
@@ -330,7 +330,6 @@ small { font-size: 0.78em; opacity: 0.85; }
 }
 .ticket-who { display: flex; gap: 10px; align-items: center; }
 .mini-head { width: 44px; height: 44px; flex: 0 0 44px; overflow: hidden; border-radius: 50%; border: 2.5px solid var(--cocoa); background: var(--petal); }
-.mini-head .sprite { width: 160%; height: auto; margin: -6% 0 0 -30%; display: block; }
 .mini-head .art { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; transform: scale(1.75); transform-origin: 50% 14%; }
 .ticket-label { font: 800 0.72rem/1 var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--cocoa-soft); }
 .ticket-drink { font: 700 1.3rem/1.1 var(--font-display); color: var(--coral-deep); }
@@ -529,7 +528,6 @@ small { font-size: 0.78em; opacity: 0.85; }
 #screen-dialogue.choosing .dlg-portrait { --ph: min(34vh, 320px); top: 70px; }
 .dlg-portrait .pose { height: 100%; }
 .dlg-portrait .art { height: 100%; width: auto; max-width: 96vw; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 6px 0 rgba(43, 34, 64, 0.3)); }
-.dlg-portrait .sprite { width: 100%; height: auto; display: block; filter: drop-shadow(0 6px 0 rgba(43, 34, 64, 0.35)); }
 .dlg-portrait.dim { filter: brightness(0.85) saturate(0.85); }
 .dlg-bottom {
   position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 3;
@@ -716,19 +714,6 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
 .emote-flustered { color: #c98a12; letter-spacing: -0.1em; }
 .emote-blush { color: #e0607a; }
 
-/* ---------- Sprite part animation (ears & tail) ---------- */
-.sprite .part { transform-box: fill-box; }
-.sprite .tail { transform-origin: 0% 100%; animation: tail 2.8s ease-in-out infinite; }
-.sprite .ear-l { transform-origin: 80% 100%; animation: earL 6s ease-in-out infinite; }
-.sprite .ear-r { transform-origin: 20% 100%; animation: earR 7s ease-in-out infinite; }
-.sprite.expr-sad .ear-l { animation: none; transform: rotate(-22deg) translateY(1px); }
-.sprite.expr-sad .ear-r { animation: none; transform: rotate(22deg) translateY(1px); }
-.sprite.expr-flustered .ear-l { animation: none; transform: rotate(-12deg); }
-.sprite.expr-flustered .ear-r { animation: none; transform: rotate(12deg); }
-.sprite.expr-flustered .tail { animation: tailFast 0.5s ease-in-out infinite; }
-.sprite.expr-happy .tail { animation-duration: 1.2s; }
-.sprite.expr-happy .ear-l, .sprite.expr-happy .ear-r { animation: earPerk 1.4s ease-in-out infinite; }
-
 /* ---------- Keyframes ---------- */
 @keyframes bob { 50% { transform: translateY(-6px); } }
 @keyframes breathe { 50% { transform: scaleY(1.012); } }
@@ -743,7 +728,6 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
 @keyframes ticketIn { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes starIn { 0% { transform: scale(0) rotate(-40deg); } 70% { transform: scale(1.2) rotate(8deg); } 100% { transform: scale(1); } }
 @keyframes fillMeter { from { width: 0; } }
-@keyframes exprPop { 0% { transform: translateY(0); } 40% { transform: translateY(-3%); } 100% { transform: translateY(0); } }
 @keyframes choiceIn { from { transform: translateX(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes nudge { 50% { transform: translateY(3px); } }
 @keyframes wiggle { 50% { transform: rotate(8deg); } }
@@ -754,16 +738,11 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
 @keyframes twinkle { from { opacity: 0.45; } to { opacity: 0.95; } }
 @keyframes stream { 50% { opacity: 0.75; } }
 @keyframes steam { 0% { transform: translateY(2px); opacity: 0; } 50% { opacity: 0.9; } 100% { transform: translateY(-3px); opacity: 0; } }
-@keyframes tail { 50% { transform: rotate(-9deg); } }
-@keyframes tailFast { 50% { transform: rotate(-14deg); } }
-@keyframes earL { 0%, 88%, 100% { transform: none; } 92% { transform: rotate(-14deg); } 96% { transform: rotate(4deg); } }
-@keyframes earR { 0%, 80%, 100% { transform: none; } 84% { transform: rotate(14deg); } 88% { transform: rotate(-4deg); } }
 @keyframes step { 50% { transform: translateY(-2.5%); } }
 @keyframes shake { 20%, 60% { transform: translateX(-1.5%); } 40%, 80% { transform: translateX(1.5%); } }
 @keyframes sway { 50% { transform: rotate(-1.5deg); } }
 @keyframes emoteIn { from { transform: scale(0) rotate(-20deg); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes emoteBob { 50% { transform: translateY(-4px); } }
-@keyframes earPerk { 50% { transform: translateY(-1px); } }
 
 /* ---------- Motion preferences ---------- */
 @media (prefers-reduced-motion: reduce) {

@@ -96,10 +96,13 @@
       unlock: { type: 'intro' },
       lines: {
         meet: 'Oh! Um, hi again, {name}. I\'m on my break. Could I order like a real customer?',
+        again: 'Me again. I, um, want to try something new. For science. For art.',
         greet: ['Morning! I mean, hi. It\'s afternoon. Hi.', 'Is it okay if I sit by the window again?', 'I drew the latte art queue. Want to see later?'],
         order: 'Could I get an {drink}, please? Only if it\'s not too much trouble.',
-        happy: ['It\'s perfect. You remembered the cinnamon.', 'This tastes like a warm blanket. Thank you.'],
-        wrong: ['Oh, that\'s okay! It\'s… different. I\'ll still drink it.', 'It\'s fine, really! ...Was there cinnamon?'],
+        happy: ['This tastes like a warm blanket. Thank you.', 'Oh, I like this. I might have a new favorite. Don\'t tell my oat latte.'],
+        wrong: ['Oh, that\'s okay! It\'s… different. I\'ll still drink it.', 'It\'s fine, really! I\'ll sketch it instead.'],
+        favHappy: ['It\'s perfect. You remembered the cinnamon.'],
+        favWrong: ['It\'s fine, really! ...Was there cinnamon?'],
         gallery: ['I keep a sketch of every regular. Yours is my favorite. Don\'t tell anyone.', 'Rainy days are for drawing. Sunny days too, I guess.'],
       },
     },
@@ -113,10 +116,13 @@
       unlock: { type: 'visit' },
       lines: {
         meet: 'So you\'re {name}, the new owner. Cool. Don\'t ruin the coffee.',
+        again: 'Don\'t look at me like that. I\'m allowed a second cup.',
         greet: ['Hey. Don\'t make it weird that I\'m here again.', 'It\'s too bright out. Your café is the correct amount of dim.', 'I wrote a song about your espresso machine. It\'s sad.'],
         order: 'A {drink}. Black as my soul. Or, you know, the recipe.',
-        happy: ['...That\'s actually perfect. Don\'t tell anyone I smiled.', 'Strong. Bitter. Honest. Ten out of ten.'],
-        wrong: ['This is… sweet. I\'m going to pretend this never happened.', 'Bold choice. Wrong, but bold.'],
+        happy: ['...That\'s actually perfect. Don\'t tell anyone I smiled.', 'Huh. Not bad. Not bad at all.'],
+        wrong: ['Bold choice. Wrong, but bold.', 'I\'ll drink it. Out of respect.'],
+        favHappy: ['Strong. Bitter. Honest. Ten out of ten.'],
+        favWrong: ['This is… sweet. I\'m going to pretend this never happened.'],
         gallery: ['The eyeliner takes twelve minutes. Worth it.', 'If you tell people I\'m nice, I\'ll deny it.'],
       },
     },
@@ -130,10 +136,13 @@
       unlock: { type: 'visit' },
       lines: {
         meet: 'Hi! Sorry, I know I\'m blocking the doorway. I always am. Is the pink drink still on the menu?',
+        again: 'Round two! Can I try something different this time?',
         greet: ['Boss! Hi! I carried your delivery in, hope that\'s okay.', 'I did leg day. I deserve something pink.', 'Your plant looks happy. I talked to it.'],
         order: 'Could I please have a {drink}? Extra cloud if that\'s allowed!',
         happy: ['It\'s so pretty I don\'t want to drink it! ...I\'m drinking it.', 'Best. Day. Ever. Thank you!'],
-        wrong: ['Oh! It\'s, um, very brown. That\'s okay! I\'ll be brave.', 'No problem at all! Everyone makes mistakes!'],
+        wrong: ['No problem at all! Everyone makes mistakes!', 'It\'s… a surprise! I love surprises. Mostly.'],
+        favHappy: ['Pink! Cloud! Perfect! I\'m so happy right now!'],
+        favWrong: ['Oh! It\'s, um, very brown. That\'s okay! I\'ll be brave.'],
         gallery: ['I can lift a piano, but I can\'t lift my eyes when you smile at me. Wait. Did I say that out loud?', 'Frosting roses are all in the wrist.'],
       },
     },
@@ -147,10 +156,13 @@
       unlock: { type: 'decor', count: 2 },
       lines: {
         meet: 'So this is the café everyone\'s whispering about. Cute lights. I approve, darling.',
+        again: 'Darling, I\'m back. Let\'s see what else you can do.',
         greet: ['Darling! Your window could use more ribbon. Later.', 'Don\'t look at my shoes, look at my eyes. ...Okay, look at the shoes too.', 'I brought you a sticker. It\'s a heart. Obviously.'],
         order: 'One {drink}, darling. Make it photogenic.',
         happy: ['Gorgeous. Ten out of ten, no notes.', 'This is going on my feed. You\'re going on my feed.'],
         wrong: ['Hm. Avant-garde. Not what I ordered, but avant-garde.', 'We\'ll call this one a rough draft, darling.'],
+        favHappy: ['The sprinkles! You remembered. I could kiss this cup.'],
+        favWrong: ['Darling, where are my hearts? The sprinkles are the whole point.'],
         gallery: ['Fashion is a love letter you wear.', 'I always fix my hair before I come in. You noticed? Good.'],
       },
     },
@@ -178,27 +190,10 @@
     },
   };
 
-  /* ---------- Neighborhood regulars (non-romanceable customers) ----------
-   * Regulars have no illustrations yet, so they use procedural pixel sprites. */
-  const regulars = [
-    { id: 'juniper', name: 'Juniper', look: { skin: '#f4d2bd', hair: '#7a5a8c', hairStyle: 'long', cloth: '#9ec9b3', outfit: 'sweater', eyes: '#4b6b8a', ear: 'pointy' } },
-    { id: 'pip', name: 'Pip', look: { skin: '#e8b996', hair: '#3d2b25', hairStyle: 'fluffy', cloth: '#f2b880', outfit: 'hoodie', eyes: '#3d6b4a', ear: 'pointy' } },
-    { id: 'hazel', name: 'Hazel', look: { skin: '#fbe2d4', hair: '#b06a4a', hairStyle: 'short', cloth: '#c7b5e8', outfit: 'sweater', eyes: '#6b4a2b', ear: 'round' } },
-    { id: 'mochi', name: 'Mochi', look: { skin: '#a8724f', hair: '#f5ece0', hairStyle: 'fluffy', cloth: '#f4a6b4', outfit: 'blouse', eyes: '#3b2a24', ear: 'fold' } },
-    { id: 'sable', name: 'Sable', look: { skin: '#7a4f3a', hair: '#1f1a1a', hairStyle: 'long', cloth: '#f1d27a', outfit: 'hoodie', eyes: '#c58b3a', ear: 'tall' } },
-  ];
-
-  const regularLines = {
-    greet: ['Hello! First time here since the new owner. It smells amazing.', 'The cat tower rumors are true, I hope?', 'Long day. I need something cozy.', 'My friend said the lattes here are magic.'],
-    order: 'Could I get a {drink}, please?',
-    happy: ['Lovely! I\'ll be back tomorrow.', 'Oh, that\'s exactly right. Thank you!'],
-    wrong: ['Hmm, not quite what I asked for, but thanks.', 'That\'s… a different drink. Oh well!'],
-  };
-
   /* ---------- Décor upgrades ---------- */
   const decor = [
     { id: 'plant', name: 'Potted Monstera', price: 40, bonus: 0.05, desc: 'A big leafy friend by the window. Customers relax.' },
-    { id: 'chairs', name: 'Pastel Chairs', price: 70, bonus: 0.08, desc: 'Mint and pink seats with a tiny round table.' },
+    { id: 'chairs', name: 'Pastel Chairs', price: 60, bonus: 0.08, desc: 'Mint and pink seats with a tiny round table.' },
     { id: 'lights', name: 'Fairy Lights', price: 90, bonus: 0.1, desc: 'Twinkling strings across the window and ceiling.' },
     { id: 'neon', name: 'Neon Heart Sign', price: 110, bonus: 0.1, desc: 'A soft pink glow that says "open, and in love".' },
     { id: 'tower', name: 'Cat Tower', price: 150, bonus: 0.12, desc: 'A plush tower for Biscuit, the café\'s resident cat.' },
@@ -531,16 +526,17 @@
     lumi: [{ scene: 'lumi_1', min: 0 }],
   };
 
-  /* First day is hand-authored so every player meets the core cast. */
+  /* First day is hand-authored so every player meets the core cast.
+   * `again` marks a return visit: the character comes back to try something new. */
   const firstShift = [
-    { who: 'juniper', drink: 'lavender_fog' },
     { who: 'atlas', drink: 'strawberry_cloud' },
     { who: 'milo', drink: 'oat_latte' },
     { who: 'riven', drink: 'midnight' },
+    { who: 'milo', drink: 'lavender_fog', again: true },
   ];
 
   window.GAME_DATA = {
-    steps, ingredients, recipes, tiers, characters, expressions, player, regulars, regularLines, decor, scenes, routes, firstShift,
-    economy: { startCoins: 25, patienceSeconds: 45, pourRate: 0.62 },
+    steps, ingredients, recipes, tiers, characters, expressions, player, decor, scenes, routes, firstShift,
+    economy: { startCoins: 30, patienceSeconds: 45, pourRate: 0.62 },
   };
 })();

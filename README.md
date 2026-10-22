@@ -16,7 +16,7 @@ Opening `index.html` directly from disk also works. The Google Fonts pixel and b
 ## How to play
 
 1. **Start Day.** Pick your look and name (blank means everyone calls you Y/N), meet Milo, then the café opens. You can change both later in ⚙ Settings.
-2. **Take Order.** Read the ticket. It names the cup, base, milk, syrup and topping.
+2. **Take Order.** Every customer is one of the cast. They usually order their favorite, and on busier days some come back for a second, different drink. Read the ticket. It names the cup, base, milk, syrup and topping.
 3. **Make Drink.** Pick each ingredient, then **hold to pour** and let go inside the pink band. A perfect pour and a quick serve earn bigger tips.
 4. **Serve.** The ticket is checked: correct orders pay full price plus a tip, and cast members gain affection.
 5. **Closing Time.** See earnings, tips, satisfaction stars and affection changes.
@@ -52,11 +52,11 @@ Settings (⚙) has sound, reduce motion, text speed, and **Reset save data** (tu
 | --- | --- |
 | `index.html` | Screen markup: title, café, drink station, results, evening, dialogue, gallery, upgrades |
 | `css/style.css` | All styling, animation and responsive rules |
-| `js/data.js` | **Game content**: ingredients, recipes, cast, regulars, décor, story scenes, routes, first-day shift |
+| `js/data.js` | **Game content**: ingredients, recipes, cast, protagonist, décor, story scenes, routes, first-day shift |
 | `assets/characters/<id>/` | Cast art: `bust.webp` (gallery, evening cards), `full.webp` (profile), `bust-<expression>.webp` (dialogue), `chibi-<expression>.webp` (café counter, title), `turn-0…7.webp` (turnaround; `turn-6` is the walking frame) |
 | `assets/source/` | The original art: two group sheets and one expression sheet per character |
 | `tools/slice-art.py` | Re-slices the sheets into `assets/characters/` (`pip install pillow numpy scipy`, then `python3 tools/slice-art.py`) |
-| `js/sprites.js` | Procedural pixel art for the non-romanceable regulars, cups and icons, output as SVG |
+| `js/sprites.js` | Procedural pixel art for drink cups and UI icons, output as SVG |
 | `js/cafe.js` | The café scene on a 160×120 pixel canvas, plus décor drawing reused for shop previews |
 | `js/audio.js` | Small synthesized sound effects (Web Audio, no files) |
 | `js/game.js` | Engine: screens, shift loop, drink making, scoring, dialogue runner, gallery, shop, save/load |
