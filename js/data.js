@@ -95,7 +95,7 @@
       unlockHint: 'Already works at the café.',
       unlock: { type: 'intro' },
       lines: {
-        meet: 'Oh! Um, hi again, boss. I\'m on my break. Could I order like a real customer?',
+        meet: 'Oh! Um, hi again, {name}. I\'m on my break. Could I order like a real customer?',
         greet: ['Morning! I mean, hi. It\'s afternoon. Hi.', 'Is it okay if I sit by the window again?', 'I drew the latte art queue. Want to see later?'],
         order: 'Could I get an {drink}, please? Only if it\'s not too much trouble.',
         happy: ['It\'s perfect. You remembered the cinnamon.', 'This tastes like a warm blanket. Thank you.'],
@@ -112,7 +112,7 @@
       unlockHint: 'Drops by on your first day.',
       unlock: { type: 'visit' },
       lines: {
-        meet: 'So you\'re the new owner. Cool. Don\'t ruin the coffee.',
+        meet: 'So you\'re {name}, the new owner. Cool. Don\'t ruin the coffee.',
         greet: ['Hey. Don\'t make it weird that I\'m here again.', 'It\'s too bright out. Your café is the correct amount of dim.', 'I wrote a song about your espresso machine. It\'s sad.'],
         order: 'A {drink}. Black as my soul. Or, you know, the recipe.',
         happy: ['...That\'s actually perfect. Don\'t tell anyone I smiled.', 'Strong. Bitter. Honest. Ten out of ten.'],
@@ -161,6 +161,23 @@
    * assets/source by tools/slice-art.py). */
   const expressions = ['neutral', 'happy', 'blush', 'flustered', 'surprised', 'sad', 'pensive', 'smirk'];
 
+  /* ---------- The protagonist ----------
+   * The player picks a look and a name. Use {name} in any line to say it. Each look
+   * has its own bust expressions; a missing one falls back to the closest match. */
+  const player = {
+    defaultName: 'Y/N',
+    looks: [
+      { id: 'player-a', label: 'Curly crop',
+        expressions: ['neutral', 'content', 'smile', 'talk', 'happy', 'laugh', 'smirk', 'pensive', 'surprised', 'sad', 'blush'] },
+      { id: 'player-b', label: 'Soft waves',
+        expressions: ['neutral', 'content', 'talk', 'excited', 'smile', 'happy', 'laugh', 'shy', 'sad', 'surprised', 'flustered', 'blush'] },
+    ],
+    fallback: {
+      flustered: ['shy', 'blush'], shy: ['blush'], smirk: ['smile'], pensive: ['content', 'neutral'],
+      excited: ['laugh', 'happy'], talk: ['smile'], content: ['smile'], laugh: ['happy'],
+    },
+  };
+
   /* ---------- Neighborhood regulars (non-romanceable customers) ----------
    * Regulars have no illustrations yet, so they use procedural pixel sprites. */
   const regulars = [
@@ -196,7 +213,7 @@
       nodes: {
         start: { who: 'narr', text: 'A brass key, a recipe box, and a note in your aunt\'s looping handwriting: "The Velvet Paw is yours now. Be kind to the regulars. They\'re softer than they look."', next: 'n2' },
         n2: { who: 'narr', text: 'The café smells like cinnamon and old wood. Sunlight spills over mismatched cups and a very sleepy espresso machine.', next: 'n3' },
-        n3: { who: 'milo', expr: 'flustered', text: 'Oh! You must be the new owner. I\'m Milo. I open the café most mornings. Sorry, I\'m not great at first impressions.', next: 'n4' },
+        n3: { who: 'milo', expr: 'flustered', text: 'Oh! You must be {name}, the new owner. I\'m Milo. I open the café most mornings. Sorry, I\'m not great at first impressions.', next: 'n4' },
         n4: { who: 'milo', expr: 'neutral', text: 'Every order comes with a ticket. Pick the cup, the base, milk, syrup and topping. The recipe is written right on it.', next: 'n5' },
         n5: { who: 'milo', expr: 'happy', text: 'Then hold to pour and let go inside the pink band. Customers notice a perfect pour. They tip for it, too.', next: 'c1' },
         c1: {
@@ -274,7 +291,7 @@
           ],
         },
         a1: { who: 'milo', expr: 'flustered', text: 'You can\'t just say things like that. My tail is doing a thing.', next: 'end' },
-        b1: { who: 'milo', expr: 'blush', text: 'Honestly? Mornings at the café. With you.', next: 'end' },
+        b1: { who: 'milo', expr: 'blush', text: 'Honestly? Mornings at the café. With you, {name}.', next: 'end' },
         c1r: { who: 'milo', expr: 'happy', text: 'Yes! There\'s a crêpe place with the strawberry ones. I\'ve been saving it for a special occasion.', next: 'end' },
         end: { who: 'narr', expr: 'blush', text: 'On the walk back, his hand brushes yours. Neither of you mentions it. Neither of you lets go.', end: true },
       },
@@ -284,7 +301,7 @@
       title: 'Rooftop Static', char: 'riven', bg: 'stars',
       nodes: {
         start: { who: 'narr', expr: 'neutral', text: 'Taking the trash out after closing, you find Riven on the fire escape, headphones around his neck, watching the city lights.', next: 'n2' },
-        n2: { who: 'riven', expr: 'smirk', text: 'Relax, I\'m not breaking in. Your aunt let me sit up here. Guess I should ask the new management.', next: 'c1' },
+        n2: { who: 'riven', expr: 'smirk', text: 'Relax, {name}. I\'m not breaking in. Your aunt let me sit up here. Guess I should ask the new management.', next: 'c1' },
         c1: {
           who: 'narr', expr: 'neutral', text: 'He raises one perfectly lined eyebrow.',
           choices: [
@@ -339,7 +356,7 @@
             { text: 'Is this a date, Riven?', aff: 7, next: 'e2' },
           ],
         },
-        e1: { who: 'riven', expr: 'happy', text: 'Good. Then it\'s a thing now. Our thing.', end: true },
+        e1: { who: 'riven', expr: 'happy', text: 'Good. Then it\'s a thing now. Our thing, {name}.', end: true },
         e2: { who: 'riven', expr: 'flustered', text: 'Maybe. Possibly. …Yes. Don\'t make it weird.', end: true },
       },
     },
@@ -348,7 +365,7 @@
       title: 'Heavy Lifting', char: 'atlas', bg: 'cafe-night',
       nodes: {
         start: { who: 'narr', expr: 'neutral', text: 'A delivery of flour sacks arrives late. Before you can work out how to move them, Atlas lifts three at once.', next: 'n2' },
-        n2: { who: 'atlas', expr: 'happy', text: 'Where d\'you want these, boss? Oh, sorry. Is it okay if I call you boss?', next: 'c1' },
+        n2: { who: 'atlas', expr: 'happy', text: 'Where d\'you want these, boss? Oh, sorry. Is it okay if I call you boss? Or should I stick with {name}?', next: 'c1' },
         c1: {
           who: 'narr', expr: 'neutral', text: 'He waits, sacks balanced on one shoulder like they\'re pillows.',
           choices: [
@@ -439,7 +456,7 @@
         d1: { who: 'lumi', expr: 'smirk', text: '"I\'m here to be adored, and also to fix your window." Accurate, no?', next: 'end' },
         d2: { who: 'lumi', expr: 'surprised', text: '…Oh. That landed. Give me a second.', next: 'end' },
         d3: { who: 'lumi', expr: 'blush', text: 'The version in pajamas with a face mask on? You\'ll have to earn that, darling.', next: 'end' },
-        end: { who: 'lumi', expr: 'happy', text: 'Same time next week. Bring snacks. Strawberry ones.', end: true },
+        end: { who: 'lumi', expr: 'happy', text: 'Same time next week, {name}. Bring snacks. Strawberry ones.', end: true },
       },
     },
 
@@ -523,7 +540,7 @@
   ];
 
   window.GAME_DATA = {
-    steps, ingredients, recipes, tiers, characters, expressions, regulars, regularLines, decor, scenes, routes, firstShift,
+    steps, ingredients, recipes, tiers, characters, expressions, player, regulars, regularLines, decor, scenes, routes, firstShift,
     economy: { startCoins: 25, patienceSeconds: 45, pourRate: 0.62 },
   };
 })();

@@ -15,7 +15,7 @@ Opening `index.html` directly from disk also works. The Google Fonts pixel and b
 
 ## How to play
 
-1. **Start Day.** A short intro with Milo, then the café opens.
+1. **Start Day.** Pick your look and name (blank means everyone calls you Y/N), meet Milo, then the café opens. You can change both later in ⚙ Settings.
 2. **Take Order.** Read the ticket. It names the cup, base, milk, syrup and topping.
 3. **Make Drink.** Pick each ingredient, then **hold to pour** and let go inside the pink band. A perfect pour and a quick serve earn bigger tips.
 4. **Serve.** The ticket is checked: correct orders pay full price plus a tip, and cast members gain affection.
@@ -65,6 +65,7 @@ Settings (⚙) has sound, reduce motion, text speed, and **Reset save data** (tu
 
 - **Recipe:** add an entry to `recipes` in `js/data.js` using ingredient ids from `ingredients`.
 - **Character:** add to `characters` with `lines` and a `routes` entry, and add a 4×6 expression sheet as `assets/source/<id>-sheet.png` (same layout as the others), then run `tools/slice-art.py`. A scene node's `expr` picks the bust: `neutral`, `happy`, `blush`, `flustered`, `surprised`, `sad`, `pensive` or `smirk`.
+- **Protagonist:** `player` in `js/data.js` lists the two looks and their bust expressions (cut from `assets/source/player-sheet.png`). Write `{name}` in any line to use the player's name. When the player picks a choice, they say it with an expression based on the affection it gives, or set `you: '<expression>'` on the choice.
 - **Scene:** add to `scenes`. Nodes support `who`, `expr`, `text`, `next`, `end`, `choices` (`{ text, aff, flag, next }`) and `branch` (`[{ flag, next }]`, where the first matching flag wins).
 - **Décor:** add to `decor`, then draw it in `js/cafe.js` (the `decor` object, `drawBackground`, and the `preview` sizes).
 

@@ -398,6 +398,36 @@ small { font-size: 0.78em; opacity: 0.85; }
 .btn-hold { background: var(--steel); color: var(--cream); min-height: 72px; font-size: 1.2rem; touch-action: none; -webkit-touch-callout: none; }
 .btn-hold.holding { transform: translateY(3px); box-shadow: 0 1px 0 var(--cocoa); background: #5f6392; }
 
+/* ---------- Create the protagonist ---------- */
+#screen-create { background: linear-gradient(180deg, #f9c9d3 0%, var(--cream) 70%); }
+.create-inner { display: grid; gap: 14px; padding: 24px 16px 28px; }
+.create-inner h2 { font-size: 1.8rem; color: var(--coral-deep); }
+.create-preview {
+  height: clamp(170px, 30vh, 260px); display: flex; justify-content: center; align-items: flex-end;
+  background: radial-gradient(ellipse 45% 12% at 50% 94%, rgba(74, 43, 43, 0.18), transparent 70%);
+}
+.create-preview .art { height: 100%; width: auto; }
+.look-picker { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.look-picker legend, .name-field > span { font: 800 0.8rem/1 var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--cocoa-soft); margin-bottom: 8px; }
+.look-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.look-card {
+  position: relative; display: grid; gap: 6px; justify-items: center; padding: 10px; cursor: pointer;
+  background: var(--paper); border: 3px solid var(--cocoa); border-radius: 14px; box-shadow: 0 4px 0 var(--cocoa);
+}
+.look-card input { position: absolute; opacity: 0; pointer-events: none; }
+.look-card:has(input:checked) { background: var(--petal); box-shadow: 0 4px 0 var(--cocoa), inset 0 0 0 3px var(--coral); }
+.look-card:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.look-art { width: 100%; aspect-ratio: 1; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 10px; background: var(--blossom); }
+.look-art .art { width: 100%; height: auto; }
+.look-name { font: 700 1.05rem/1.1 var(--font-display); }
+.name-field { display: grid; gap: 6px; }
+.name-field input {
+  min-height: 52px; padding: 10px 14px; font: 700 1.15rem/1.2 var(--font-body); color: var(--ink);
+  background: var(--paper); border: 3px solid var(--cocoa); border-radius: 12px;
+}
+.name-field input::placeholder { color: #a48a90; }
+.name-field small { color: var(--cocoa-soft); }
+
 /* ---------- Results ---------- */
 #screen-results { background: linear-gradient(180deg, #e8e2f7, var(--cream)); padding-inline: 16px; }
 .results-card {
@@ -529,6 +559,15 @@ small { font-size: 0.78em; opacity: 0.85; }
   padding: 7px 14px; border-radius: 10px;
   background: var(--coral-deep); color: var(--cream); border: 3px solid var(--cocoa);
 }
+/* Your own lines get your face in the corner of the box. */
+.dlg-face {
+  position: absolute; left: 12px; top: -64px; width: 88px; height: 88px; z-index: 2;
+  border-radius: 14px; overflow: hidden; border: 3px solid var(--cocoa); background: var(--lavender);
+  box-shadow: 0 3px 0 var(--cocoa); animation: pop 0.25s ease both;
+}
+.dlg-face .art { width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; }
+.dlg-box.mine .dlg-name { left: 112px; background: var(--steel); }
+.btn .art-inline { width: 30px; height: 30px; object-fit: cover; object-position: 50% 10%; border-radius: 8px; border: 2px solid var(--cocoa); }
 .dlg-text { font-size: 1.05rem; line-height: 1.5; min-height: 4.5em; max-width: 60ch; }
 .dlg-box.narr .dlg-text { font-style: italic; color: var(--cocoa-soft); }
 .dlg-next { position: absolute; right: 16px; bottom: 8px; color: var(--coral-deep); animation: nudge 0.9s ease-in-out infinite; }

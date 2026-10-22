@@ -154,6 +154,52 @@ def split_by_seeds(rgba, region, seeds):
     return [keep & (owner == i) for i in range(1, count + 1)]
 
 
+# Protagonist sheet: two looks side by side. Each half has a 7-frame turnaround on
+# top, then three rows of busts. (y0, y1, bust count) per row, per look.
+PLAYER_LOOKS = {
+    'player-a': {'x': (0, 768), 'busts': [(390, 614, 4), (614, 800, 3), (800, 992, 4)]},
+    'player-b': {'x': (768, 1536), 'busts': [(390, 614, 4), (614, 800, 4), (800, 992, 4)]},
+}
+PLAYER_BUSTS = {   # busts left to right, top to bottom -> expression (keep in sync with js/data.js)
+    'player-a': ['neutral', 'content', 'smile', 'talk', 'happy', 'laugh', 'smirk', 'pensive', 'surprised', 'sad', 'blush'],
+    'player-b': ['neutral', 'content', 'talk', 'excited', 'smile', 'happy', 'laugh', 'shy', 'sad', 'surprised', 'flustered', 'blush'],
+}
+
+
+def split_row(rgba, x0, x1, y0, y1, count):
+    """Split one row of `count` touching figures: cut at the emptiest columns
+    near even spacing, then grow each figure from its own column range."""
+    region = np.zeros(rgba.shape[:2], bool)
+    region[y0:y1, x0:x1] = True
+    cols = ((rgba[y0:y1, x0:x1, 3] > ALPHA).sum(0)).astype(float)
+    width = x1 - x0
+    cuts = []
+    for i in range(1, count):
+        guess = round(width * i / count)
+        lo, hi = guess - width // (3 * count), guess + width // (3 * count)
+        cuts.append(lo + int(np.argmin(cols[lo:hi])))
+    edges = [0] + cuts + [width]
+    seeds = [(x0 + edges[i] + 25, x0 + edges[i + 1] - 25) for i in range(count)]
+    return split_by_seeds(rgba, region, seeds)
+
+
+def slice_player_sheet():
+    rgba = np.array(Image.open(SRC / 'player-sheet.png').convert('RGBA'))
+    for look, spec in PLAYER_LOOKS.items():
+        x0, x1 = spec['x']
+        top = np.zeros(rgba.shape[:2], bool)
+        top[:388, x0:x1] = True
+        for i, m in enumerate(split_components(rgba, top, 7)):
+            save(rgba, m, look, f'turn-{i}', max_h=10_000, defringe=True)
+        n = 0
+        names = PLAYER_BUSTS[look]
+        for y0, y1, count in spec['busts']:
+            for m in split_row(rgba, x0, x1, y0, y1, count):
+                kind = f'bust-{names[n]}' if n < len(names) and names[n] else f'bust-{n:02d}'
+                save(rgba, main_shape(rgba, m), look, kind, max_h=10_000, defringe=True)
+                n += 1
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
 
@@ -199,4 +245,9 @@ def slice_character_sheet(name):
 
 
 if __name__ == '__main__':
-    main()
+    import sys
+    if sys.argv[1:] == ['player']:
+        slice_player_sheet()
+    else:
+        main()
+        slice_player_sheet()

@@ -87,6 +87,19 @@
   function posed(who, kind, expr) {
     return `<div class="pose expr-${expr}">${portrait(who, { kind, expr })}${kind === 'chibi' ? emote(expr) : ''}</div>`;
   }
+  /* ---------- The protagonist ---------- */
+  const lookById = Object.fromEntries(D.player.looks.map((l) => [l.id, l]));
+  const playerLook = () => lookById[(save && save.player && save.player.look) || D.player.looks[0].id];
+  const playerName = () => (save && save.player && save.player.name) || D.player.defaultName;
+  const fill = (text) => String(text).replace(/\{name\}/g, playerName());
+  function playerExpr(look, expr) {
+    const tries = [expr, ...(D.player.fallback[expr] || []), 'neutral'];
+    return tries.find((e) => look.expressions.includes(e));
+  }
+  function playerPortrait(expr = 'neutral', look = playerLook()) {
+    return `<img class="art art-player" src="${artSrc(look.id, `bust-${playerExpr(look, expr)}`)}" alt="" draggable="false">`;
+  }
+
   function preload(id, files) { if (charById[id]) files.forEach((f) => { new Image().src = artSrc(id, f); }); }
   const WALK_FRAME = 'turn-6';   // side view facing left: customers enter from the right and leave to the left
   function showWalking(el, who) {
@@ -235,7 +248,8 @@
     }
   }
 
-  function customerLine(c, kind) {
+  function customerLine(c, kind) { return fill(rawCustomerLine(c, kind)); }
+  function rawCustomerLine(c, kind) {
     if (c.isCast) {
       const ch = charById[c.who];
       if (kind === 'greet') return isMet(c.who) ? pick(ch.lines.greet) : ch.lines.meet;
@@ -662,18 +676,27 @@
       const hit = node.branch.find((b) => save.flags[b.flag]);
       node = d.sc.nodes[hit ? hit.next : node.next];
     }
-    d.node = node;
-    if (node.expr) setExpr(node.expr);
-    const narr = node.who === 'narr';
-    $('#dlg-portrait').classList.toggle('dim', narr);
+    showNode(node);
+  }
+
+  /* who: 'narr', 'player' (your own line, echoed from a choice) or a character id. */
+  function showNode(node) {
+    G.dlg.node = node;
+    const narr = node.who === 'narr', mine = node.who === 'player';
+    if (node.expr && !mine) setExpr(node.expr);
+    $('#dlg-portrait').classList.toggle('dim', narr || mine);
     const nameEl = $('#dlg-name');
     nameEl.hidden = narr;
-    nameEl.textContent = narr ? '' : charById[node.who].name;
+    nameEl.textContent = narr ? '' : mine ? playerName() : charById[node.who].name;
+    const face = $('#dlg-face');
+    face.hidden = !mine;
+    if (mine) face.innerHTML = playerPortrait(node.expr);
     $('#dlg-box').classList.toggle('narr', narr);
+    $('#dlg-box').classList.toggle('mine', mine);
     $('#dlg-choices').innerHTML = '';
     $('#screen-dialogue').classList.remove('choosing');
     $('#dlg-next').hidden = true;
-    typewrite(node.text);
+    typewrite(fill(node.text));
   }
 
   function typewrite(text) {
@@ -699,7 +722,7 @@
     if (node.choices) {
       const box = $('#dlg-choices');
       $('#screen-dialogue').classList.add('choosing');
-      box.innerHTML = node.choices.map((c, i) => `<button class="btn choice" data-action="choose" data-i="${i}"><kbd>${i + 1}</kbd><span>${esc(c.text)}</span></button>`).join('');
+      box.innerHTML = node.choices.map((c, i) => `<button class="btn choice" data-action="choose" data-i="${i}"><kbd>${i + 1}</kbd><span>${esc(fill(c.text))}</span></button>`).join('');
       const first = box.querySelector('button');
       if (first) first.focus({ preventScroll: true });
     } else {
@@ -732,7 +755,9 @@
       renderMeter(true);
     } else Sfx.play('tap');
     persist();
-    goNode(c.next);
+    // you say the line you picked, then the scene carries on
+    const tone = c.you || (c.aff >= 6 ? 'blush' : c.aff >= 4 ? 'happy' : c.aff >= 1 ? 'smile' : c.aff < 0 ? 'sad' : 'neutral');
+    showNode({ who: 'player', expr: tone, text: c.text, next: c.next });
     $('#dlg-box').focus({ preventScroll: true });
   }
 
@@ -879,6 +904,7 @@
         <div class="set-row"><span>Text speed</span><div class="segs" role="group" aria-label="Text speed">${speedBtn('slow', 'Slow')}${speedBtn('normal', 'Normal')}${speedBtn('instant', 'Instant')}</div></div>
       </div>
       <p class="set-help">Controls: tap buttons, or use the keyboard. <kbd>Enter</kbd>/<kbd>Space</kbd> advance dialogue, <kbd>1</kbd>–<kbd>4</kbd> pick options and choices, hold <kbd>Space</kbd> to pour, <kbd>Esc</kbd> goes back.</p>
+      ${save ? `<button class="btn btn-block" data-action="edit-player">${playerPortrait('smile').replace('art-player', 'art-player art-inline')} Change name or look</button>` : ''}
       <div class="row">
         <button class="btn btn-soft" data-action="go-title-modal">Title Screen</button>
         <button class="btn btn-primary" data-action="close-modal">Done</button>
@@ -895,11 +921,63 @@
     document.documentElement.classList.toggle('reduce-motion', !!settings.reduceMotion);
   }
 
+  /* ---------- Create / edit the protagonist ---------- */
+  let createTimer = null;
+  function openCreate({ onDone, onCancel, edit = false }) {
+    const current = (save && save.player) || { name: '', look: D.player.looks[0].id };
+    G.create = { onDone, onCancel, look: current.look };
+    $('#create-heading').textContent = edit ? 'Change your name or look' : 'Who\'s taking over the café?';
+    $('#create-submit').textContent = edit ? 'Save' : 'Open the café';
+    $('#player-name').value = current.name || '';
+    $('#look-options').innerHTML = D.player.looks.map((l) => `
+      <label class="look-card">
+        <input type="radio" name="look" value="${l.id}" ${l.id === current.look ? 'checked' : ''}>
+        <span class="look-art">${playerPortrait('smile', l)}</span>
+        <span class="look-name">${esc(l.label)}</span>
+      </label>`).join('');
+    D.player.looks.forEach((l) => preload(l.id, Array.from({ length: 7 }, (_, i) => `turn-${i}`)));
+    previewLook();
+    show('create');
+  }
+  function previewLook() {
+    clearInterval(createTimer);
+    let frame = 0;
+    const look = G.create.look;
+    const draw = () => {
+      $('#create-preview').innerHTML = `<img class="art" src="${artSrc(look, `turn-${frame}`)}" alt="">`;
+      frame = (frame + 1) % 7;
+    };
+    draw();
+    if (!settings.reduceMotion) createTimer = setInterval(draw, 520);
+  }
+  function closeCreate(cb) {
+    clearInterval(createTimer);
+    const c = G.create;
+    G.create = null;
+    if (cb) cb.call(null, c);
+  }
+  $('#look-options').addEventListener('change', (e) => {
+    if (e.target.name !== 'look') return;
+    G.create.look = e.target.value;
+    Sfx.play('select');
+    previewLook();
+  });
+  $('#create-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#player-name').value.replace(/[{}<>]/g, '').trim().slice(0, 16);
+    const look = G.create.look;
+    if (!save) save = freshSave();
+    save.player = { name, look };
+    persist();
+    Sfx.play('unlock');
+    closeCreate((c) => c.onDone && c.onDone());
+  });
+
   /* ---------- Top-level flow ---------- */
   function startDay() {
-    if (!save) {
-      save = freshSave();
-      persist();
+    if (!save || !save.player) {
+      openCreate({ onDone: startDay, onCancel: () => { renderTitle(); show('title'); } });
+      return;
     }
     if (save.phase === 'intro') {
       meet('milo');
@@ -939,6 +1017,16 @@
     'open-settings': openSettings,
     'go-title': goTitle,
     'go-title-modal': () => { closeModal(); goTitle(); },
+    'create-cancel': () => closeCreate((c) => c.onCancel && c.onCancel()),
+    'edit-player': () => {
+      const back = G.screen;
+      closeModal();
+      openCreate({
+        edit: true,
+        onDone: () => { show(back); if (back === 'cafe') renderCafe(); toast(`Nice to meet you, <b>${esc(playerName())}</b>.`, 'heart'); },
+        onCancel: () => show(back),
+      });
+    },
     back: () => {
       const to = G.returnTo || 'title';
       if (to === 'title') renderTitle();
