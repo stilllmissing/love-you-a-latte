@@ -68,9 +68,19 @@
     toast(`New character unlocked: <b>${charById[id].name}</b>`, 'unlock');
   }
 
-  function portrait(who, expr = 'neutral', opts) {
-    const look = charById[who] ? charById[who].look : regById[who].look;
-    return S.character(look, expr, opts);
+  /* Cast members have illustrations (bust, full body, chibi); regulars fall back
+   * to procedural pixel sprites. Expressions are shown with an emote and a pose. */
+  const artSrc = (id, kind) => `assets/characters/${id}-${kind}.webp`;
+  function portrait(who, { kind = 'bust', expr = 'neutral', locked = false } = {}) {
+    if (charById[who]) {
+      return `<img class="art art-${kind}${locked ? ' silhouette' : ''}" src="${artSrc(who, kind)}" alt="" draggable="false">`;
+    }
+    return S.character(regById[who].look, expr);
+  }
+  const EMOTES = { happy: '♪', blush: '♡', flustered: '!!', sad: '…', smirk: '✧' };
+  const emote = (expr) => (EMOTES[expr] ? `<span class="emote emote-${expr}" aria-hidden="true">${EMOTES[expr]}</span>` : '');
+  function posed(who, kind, expr) {
+    return `<div class="pose expr-${expr}">${portrait(who, { kind, expr })}${emote(expr)}</div>`;
   }
   const whoName = (who) => (charById[who] || regById[who]).name;
 
@@ -145,7 +155,7 @@
     const cast = $('#title-cast');
     cast.innerHTML = D.characters.map((c, i) => {
       const met = isMet(c.id);
-      return `<div class="title-sprite" style="--i:${i}">${portrait(c.id, met ? 'happy' : 'neutral', met ? undefined : { silhouette: '#c9b3cf' })}</div>`;
+      return `<div class="title-sprite" style="--i:${i}">${portrait(c.id, { kind: 'chibi', locked: !met })}</div>`;
     }).join('');
     const cont = $('#btn-continue');
     cont.disabled = !save;
@@ -222,7 +232,7 @@
     const c = current();
 
     if (G.phase === 'hub' || !c) {
-      const idle = isMet('milo') ? `<div class="cust idle"><div class="cust-sprite">${portrait('milo', 'happy')}</div></div>` : '';
+      const idle = isMet('milo') ? `<div class="cust idle"><div class="cust-sprite">${posed('milo', 'chibi', 'neutral')}</div></div>` : '';
       cust.innerHTML = idle;
       bubble.hidden = true;
       const lumi = charById.lumi;
@@ -242,7 +252,7 @@
 
     const recipe = recipeById[c.drink];
     const expr = G.phase === 'served' ? c.reaction : c.isCast && !isMet(c.who) ? 'blush' : 'neutral';
-    cust.innerHTML = `<div class="cust ${anim || ''}"><div class="cust-sprite">${portrait(c.who, expr)}</div></div>`;
+    cust.innerHTML = `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'chibi', expr)}</div></div>`;
 
     let line;
     if (G.phase === 'arrive') line = c.greetLine || (c.greetLine = customerLine(c, 'greet'));
@@ -331,7 +341,7 @@
     const d = G.drink;
     const stepId = D.steps[d.step].id;
     $('#drink-ticket').innerHTML = `
-      <div class="ticket-who"><div class="mini-head">${portrait(c.who, 'neutral')}</div>
+      <div class="ticket-who"><div class="mini-head">${portrait(c.who)}</div>
         <div><div class="ticket-label">Order for ${esc(whoName(c.who))}</div><div class="ticket-drink">${esc(recipe.name)}</div></div></div>
       <ul class="recipe-list recipe-inline">${RECIPE_KEYS.map((k) => `<li class="${k === stepId ? 'now' : ''}">${esc(ingName(k, recipe[k]))}</li>`).join('')}</ul>
       <div class="patience" role="img" aria-label="Patience"><span class="patience-fill"></span></div>`;
@@ -510,7 +520,7 @@
     const affRows = Object.entries(sh.affGain).map(([id, g]) => {
       const a = aff(id);
       return `<li class="aff-row">
-        <div class="mini-head">${portrait(id, g > 0 ? 'happy' : 'neutral')}</div>
+        <div class="mini-head">${portrait(id)}</div>
         <div class="aff-main"><div class="aff-top"><b>${charById[id].name}</b><span class="${g >= 0 ? 'up' : 'down'}">${g >= 0 ? '+' : ''}${g} ♥</span></div>
         <div class="meter"><span style="--to:${a}%"></span></div><div class="aff-tier">${tierOf(a).name} · ${a}/100</div></div></li>`;
     }).join('');
@@ -564,7 +574,7 @@
         const n = nextSceneFor(c.id);
         const a = aff(c.id);
         return `<article class="eve-card" style="--accent:${c.color}">
-          <div class="eve-portrait">${portrait(c.id, n.isNew ? 'blush' : 'neutral')}</div>
+          <div class="eve-portrait">${portrait(c.id)}</div>
           <div class="eve-info">
             <h3>${c.name} <small>${c.age}</small></h3>
             <div class="meter meter-sm"><span style="--to:${a}%"></span></div>
@@ -619,8 +629,7 @@
     if (d.expr === expr) return;
     d.expr = expr;
     const p = $('#dlg-portrait');
-    p.innerHTML = portrait(d.sc.char, expr);
-    p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop');
+    p.innerHTML = posed(d.sc.char, 'bust', expr);
   }
 
   function goNode(nid) {
@@ -639,6 +648,7 @@
     nameEl.textContent = narr ? '' : charById[node.who].name;
     $('#dlg-box').classList.toggle('narr', narr);
     $('#dlg-choices').innerHTML = '';
+    $('#screen-dialogue').classList.remove('choosing');
     $('#dlg-next').hidden = true;
     typewrite(node.text);
   }
@@ -665,6 +675,7 @@
     const node = G.dlg.node;
     if (node.choices) {
       const box = $('#dlg-choices');
+      $('#screen-dialogue').classList.add('choosing');
       box.innerHTML = node.choices.map((c, i) => `<button class="btn choice" data-action="choose" data-i="${i}"><kbd>${i + 1}</kbd><span>${esc(c.text)}</span></button>`).join('');
       const first = box.querySelector('button');
       if (first) first.focus({ preventScroll: true });
@@ -718,7 +729,7 @@
       const isNew = save && save.newBadges.includes(c.id);
       return `<button class="g-card ${met ? '' : 'locked'}" data-action="char-detail" data-id="${c.id}" style="--accent:${c.color}" aria-label="${met ? c.name + ', ' + tierOf(a).name : 'Locked character'}">
         ${isNew ? '<span class="badge-new">NEW</span>' : ''}
-        <div class="g-portrait">${met ? portrait(c.id, 'happy') : portrait(c.id, 'neutral', { silhouette: '#bfa9c6' })}${met ? '' : `<span class="g-lock">${S.icons.lock}</span>`}</div>
+        <div class="g-portrait">${portrait(c.id, { locked: !met })}${met ? '' : `<span class="g-lock">${S.icons.lock}</span>`}</div>
         <div class="g-name">${met ? `${c.name} <small>${c.age}</small>` : '???'}</div>
         <div class="g-sub">${met ? esc(c.title) : esc(c.unlockHint)}</div>
         ${met ? `<div class="meter meter-sm"><span style="--to:${a}%"></span></div><div class="g-tier">${tierOf(a).name}</div>` : ''}
@@ -733,7 +744,7 @@
     if (!met) {
       openModal(`
         <h2 id="modal-title">Locked character</h2>
-        <div class="detail-portrait locked">${portrait(id, 'neutral', { silhouette: '#bfa9c6' })}</div>
+        <div class="detail-portrait locked">${portrait(id, { kind: 'full', locked: true })}</div>
         <p class="detail-hint">${S.icons.lock} ${esc(c.unlockHint)}</p>
         <button class="btn btn-primary btn-block" data-action="close-modal">Close</button>`);
       return;
@@ -745,8 +756,8 @@
     const seen = Math.min(save.scenesSeen[id] || 0, route.length);
     openModal(`
       <div class="detail-head" style="--accent:${c.color}">
-        <div class="detail-portrait" id="detail-portrait">${portrait(id, 'happy')}</div>
-        <div class="expr-row" role="group" aria-label="Expressions">${['neutral', 'happy', 'blush', 'flustered'].map((e) => `<button class="chip-btn ${e === 'happy' ? 'on' : ''}" data-action="detail-expr" data-id="${id}" data-expr="${e}">${e}</button>`).join('')}</div>
+        <div class="detail-portrait" id="detail-portrait">${portrait(id, { kind: 'full' })}</div>
+        <div class="expr-row" role="group" aria-label="Artwork">${[['full', 'Full body'], ['bust', 'Portrait'], ['chibi', 'Chibi']].map(([k, l]) => `<button class="chip-btn ${k === 'full' ? 'on' : ''}" data-action="detail-art" data-id="${id}" data-kind="${k}" aria-pressed="${k === 'full'}">${l}</button>`).join('')}</div>
       </div>
       <h2 id="modal-title">${c.name} <small>· ${c.age}</small></h2>
       <p class="detail-title">${esc(c.title)} · ${esc(c.role)}</p>
@@ -916,9 +927,9 @@
     'evening-skip': finishDay,
     choose: (el) => choose(+el.dataset.i),
     'char-detail': (el) => openCharacter(el.dataset.id),
-    'detail-expr': (el) => {
-      $('#detail-portrait').innerHTML = portrait(el.dataset.id, el.dataset.expr);
-      $$('.expr-row .chip-btn').forEach((b) => b.classList.toggle('on', b === el));
+    'detail-art': (el) => {
+      $('#detail-portrait').innerHTML = portrait(el.dataset.id, { kind: el.dataset.kind });
+      $$('.expr-row .chip-btn').forEach((b) => { b.classList.toggle('on', b === el); b.setAttribute('aria-pressed', String(b === el)); });
       Sfx.play('tap');
     },
     'detail-line': (el) => { $('#detail-quote').textContent = `"${pick(charById[el.dataset.id].lines.gallery)}"`; Sfx.play('blip'); },
@@ -1016,6 +1027,7 @@
   }
 
   /* ---------- Boot ---------- */
+  D.characters.forEach((c) => D.artKinds.forEach((k) => { new Image().src = artSrc(c.id, k); }));
   applySettings();
   renderTitle();
   show('title');

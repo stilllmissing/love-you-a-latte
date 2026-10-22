@@ -144,9 +144,9 @@ small { font-size: 0.78em; opacity: 0.85; }
 }
 .game-title span:last-child { color: var(--steel); }
 .tagline { font-size: 1rem; color: var(--cocoa); max-width: 30ch; }
-.title-cast { display: flex; justify-content: center; gap: 2px; width: 100%; max-width: 360px; margin-block: 4px; }
-.title-sprite { width: 25%; max-width: 88px; animation: bob 2.6s ease-in-out infinite; animation-delay: calc(var(--i) * -0.6s); }
-.title-sprite .sprite { width: 100%; height: auto; display: block; }
+.title-cast { display: flex; justify-content: center; align-items: flex-end; width: 100%; max-width: 400px; height: clamp(110px, 21vh, 180px); margin-block: 4px; }
+.title-sprite { flex: 1 1 0; min-width: 0; height: 100%; animation: bob 2.6s ease-in-out infinite; animation-delay: calc(var(--i) * -0.6s); }
+.title-sprite .art { width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; }
 .title-menu { display: grid; gap: 12px; width: 100%; max-width: 320px; }
 .title-save { font-size: 0.9rem; color: var(--cocoa-soft); display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .fineprint { font-size: 0.8rem; color: var(--cocoa-soft); max-width: 34ch; }
@@ -187,9 +187,10 @@ small { font-size: 0.78em; opacity: 0.85; }
 }
 .scene-layer { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
 .customers { pointer-events: none; }
-.cust { position: absolute; left: 31.25%; top: 25%; width: 37.5%; }
-.cust-sprite { animation: breathe 3s ease-in-out infinite; transform-origin: 50% 100%; }
-.cust .sprite { width: 100%; height: auto; display: block; }
+.cust { position: absolute; left: 0; right: 0; bottom: 1%; height: 66%; display: flex; justify-content: center; }
+.cust-sprite { height: 100%; animation: breathe 3s ease-in-out infinite; transform-origin: 50% 100%; }
+.cust .pose { height: 100%; }
+.cust .art, .cust .sprite { height: 100%; width: auto; display: block; }
 .cust.walk-in { animation: walkIn 0.55s cubic-bezier(.2,.8,.3,1.1) both; }
 .cust.walk-out { animation: walkOut 0.42s ease-in both; }
 .cust.react .cust-sprite { animation: hop 0.5s ease 2, breathe 3s ease-in-out 1s infinite; }
@@ -329,6 +330,7 @@ small { font-size: 0.78em; opacity: 0.85; }
 .ticket-who { display: flex; gap: 10px; align-items: center; }
 .mini-head { width: 44px; height: 44px; flex: 0 0 44px; overflow: hidden; border-radius: 50%; border: 2.5px solid var(--cocoa); background: var(--petal); }
 .mini-head .sprite { width: 160%; height: auto; margin: -6% 0 0 -30%; display: block; }
+.mini-head .art { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; transform: scale(1.75); transform-origin: 50% 14%; }
 .ticket-label { font: 800 0.72rem/1 var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--cocoa-soft); }
 .ticket-drink { font: 700 1.3rem/1.1 var(--font-display); color: var(--coral-deep); }
 
@@ -443,7 +445,8 @@ small { font-size: 0.78em; opacity: 0.85; }
 .eve-card:nth-child(3) { animation-delay: 0.16s; }
 .eve-card:nth-child(4) { animation-delay: 0.24s; }
 .eve-portrait { width: 96px; flex: 0 0 96px; background: var(--accent); border-radius: 10px; border: 2.5px solid var(--cocoa); overflow: hidden; display: flex; align-items: flex-end; }
-.eve-portrait .sprite { width: 100%; height: auto; display: block; }
+.eve-portrait { min-height: 150px; }
+.eve-portrait .art { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
 .eve-info { flex: 1; min-width: 0; display: grid; gap: 6px; align-content: start; }
 .eve-info h3 { font-size: 1.3rem; }
 .eve-tier, .eve-scene { font-size: 0.86rem; color: var(--cocoa-soft); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -482,14 +485,21 @@ small { font-size: 0.78em; opacity: 0.85; }
 .dm-top span { color: var(--cocoa-soft); }
 .dm-num { font: 700 1rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .dm-num small { opacity: 0.6; }
+/* Bust stands on the dialogue box; while choices are up it shrinks above them so the face stays visible. */
 .dlg-portrait {
-  position: absolute; left: 50%; top: 76px; z-index: 1;
-  width: min(74%, 330px); transform: translateX(-50%);
-  transition: filter 0.3s;
+  --ph: min(62vh, 560px);
+  position: absolute; left: 0; right: 0; z-index: 1;
+  top: calc(100% - 110px - env(safe-area-inset-bottom, 0px) - var(--ph));
+  height: var(--ph);
+  display: flex; justify-content: center;
+  pointer-events: none;
+  transition: filter 0.3s, top 0.35s ease, height 0.35s ease;
 }
+#screen-dialogue.choosing .dlg-portrait { --ph: min(40vh, 400px); top: 70px; }
+.dlg-portrait .pose { height: 100%; }
+.dlg-portrait .art { height: 100%; width: auto; max-width: 96vw; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 6px 0 rgba(43, 34, 64, 0.3)); }
 .dlg-portrait .sprite { width: 100%; height: auto; display: block; filter: drop-shadow(0 6px 0 rgba(43, 34, 64, 0.35)); }
 .dlg-portrait.dim { filter: brightness(0.85) saturate(0.85); }
-.dlg-portrait.pop .sprite { animation: exprPop 0.35s ease; }
 .dlg-bottom {
   position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 3;
   display: flex; flex-direction: column; gap: 22px;
@@ -538,10 +548,10 @@ small { font-size: 0.78em; opacity: 0.85; }
 }
 .g-card:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--cocoa); }
 .g-portrait { position: relative; background: var(--accent); border-radius: 10px; border: 2.5px solid var(--cocoa); overflow: hidden; aspect-ratio: 5 / 5.4; display: flex; align-items: flex-end; }
-.g-portrait .sprite { width: 100%; height: auto; display: block; }
+.g-portrait .art { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
 .g-card.locked .g-portrait { background: #ece4ee; }
 .g-lock { position: absolute; inset: 0; display: grid; place-items: center; }
-.g-lock .icon { width: 34%; height: auto; }
+.g-lock .icon { width: 30%; height: auto; }
 .g-name { font: 700 1.15rem/1.1 var(--font-display); }
 .g-sub { font-size: 0.8rem; color: var(--cocoa-soft); line-height: 1.3; }
 .g-tier { font-size: 0.78rem; font-weight: 800; color: var(--coral-deep); }
@@ -584,7 +594,8 @@ small { font-size: 0.78em; opacity: 0.85; }
 .modal-card h2 small { color: var(--cocoa-soft); font-size: 0.7em; }
 .detail-head { display: grid; gap: 8px; }
 .detail-portrait { background: var(--accent, var(--lavender)); border: 3px solid var(--cocoa); border-radius: 14px; overflow: hidden; display: flex; justify-content: center; align-items: flex-end; height: 220px; }
-.detail-portrait .sprite { height: 100%; width: auto; display: block; }
+.detail-portrait { height: 320px; padding-top: 8px; }
+.detail-portrait .art { height: 100%; width: auto; max-width: 100%; object-fit: contain; object-position: 50% 100%; }
 .detail-portrait.locked { background: #ece4ee; }
 .expr-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip-btn {
@@ -642,6 +653,28 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
 .toast-ico .icon { width: 24px; height: 24px; }
 .toast-unlock .toast-ico { animation: spin 0.8s ease; }
 
+/* ---------- Character art ---------- */
+.art { display: block; user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none; }
+.art.silhouette { filter: brightness(0); opacity: 0.22; }
+.pose { position: relative; transform-origin: 50% 100%; }
+.pose.expr-happy { animation: hop 0.5s ease 1; }
+.pose.expr-flustered { animation: shake 0.45s ease 1; }
+.pose.expr-sad .art { filter: saturate(0.75) brightness(0.96); }
+.pose.expr-sad { transform: translateY(2%); transition: transform 0.3s; }
+.pose.expr-blush { animation: sway 0.6s ease 1; }
+.pose.expr-smirk { transform: rotate(1deg); transition: transform 0.3s; }
+.emote {
+  position: absolute; top: 2%; right: 4%; z-index: 2;
+  font: 700 1.9rem/1 var(--font-display);
+  color: var(--coral-deep);
+  text-shadow: 2px 0 var(--cream), -2px 0 var(--cream), 0 2px var(--cream), 0 -2px var(--cream), 3px 3px 0 var(--cocoa);
+  animation: emoteIn 0.45s cubic-bezier(.2,.9,.3,1.4) both, emoteBob 1.6s ease-in-out 0.45s infinite;
+}
+.cust .emote { font-size: 1.5rem; top: 0; right: 14%; }
+.emote-sad { color: var(--steel); }
+.emote-flustered { color: #c98a12; letter-spacing: -0.1em; }
+.emote-blush { color: #e0607a; }
+
 /* ---------- Sprite part animation (ears & tail) ---------- */
 .sprite .part { transform-box: fill-box; }
 .sprite .tail { transform-origin: 0% 100%; animation: tail 2.8s ease-in-out infinite; }
@@ -684,6 +717,10 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
 @keyframes tailFast { 50% { transform: rotate(-14deg); } }
 @keyframes earL { 0%, 88%, 100% { transform: none; } 92% { transform: rotate(-14deg); } 96% { transform: rotate(4deg); } }
 @keyframes earR { 0%, 80%, 100% { transform: none; } 84% { transform: rotate(14deg); } 88% { transform: rotate(-4deg); } }
+@keyframes shake { 20%, 60% { transform: translateX(-1.5%); } 40%, 80% { transform: translateX(1.5%); } }
+@keyframes sway { 50% { transform: rotate(-1.5deg); } }
+@keyframes emoteIn { from { transform: scale(0) rotate(-20deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes emoteBob { 50% { transform: translateY(-4px); } }
 @keyframes earPerk { 50% { transform: translateY(-1px); } }
 
 /* ---------- Motion preferences ---------- */
@@ -710,7 +747,7 @@ body[data-screen="dialogue"] .toasts, body[data-screen="drink"] .toasts { bottom
   .station { min-height: 130px; }
   .cup-stage { width: min(32vw, 130px); }
   .gauge { height: 112px; }
-  .dlg-portrait { width: min(60%, 260px); }
+  .dlg-portrait { --ph: 54vh; }
   .title-inner { gap: 10px; padding-top: 48px; }
 }
 @media (min-width: 520px) {

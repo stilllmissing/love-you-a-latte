@@ -53,7 +53,10 @@ Settings (⚙) has sound, reduce motion, text speed, and **Reset save data** (tu
 | `index.html` | Screen markup: title, café, drink station, results, evening, dialogue, gallery, upgrades |
 | `css/style.css` | All styling, animation and responsive rules |
 | `js/data.js` | **Game content**: ingredients, recipes, cast, regulars, décor, story scenes, routes, first-day shift |
-| `js/sprites.js` | Procedural pixel art: characters (with animated ears and tails and six expressions), cups and icons, output as SVG |
+| `assets/characters/` | Cast art per character: `<id>-bust.webp` (dialogue, gallery, evening cards), `<id>-full.webp` (profile), `<id>-chibi.webp` (café counter, title) |
+| `assets/source/` | The original character sheets |
+| `tools/slice-art.py` | Re-slices the sheets into `assets/characters/` (`pip install pillow numpy scipy`, then `python3 tools/slice-art.py`) |
+| `js/sprites.js` | Procedural pixel art for the non-romanceable regulars, cups and icons, output as SVG |
 | `js/cafe.js` | The café scene on a 160×120 pixel canvas, plus décor drawing reused for shop previews |
 | `js/audio.js` | Small synthesized sound effects (Web Audio, no files) |
 | `js/game.js` | Engine: screens, shift loop, drink making, scoring, dialogue runner, gallery, shop, save/load |
@@ -61,7 +64,7 @@ Settings (⚙) has sound, reduce motion, text speed, and **Reset save data** (tu
 ### Adding content
 
 - **Recipe:** add an entry to `recipes` in `js/data.js` using ingredient ids from `ingredients`.
-- **Character:** add to `characters` with a `look` (see existing entries for the fields), `lines`, and a `routes` entry.
+- **Character:** add to `characters` with `lines` and a `routes` entry, and put `<id>-bust.webp`, `<id>-full.webp` and `<id>-chibi.webp` in `assets/characters/`. A scene node's `expr` (`happy`, `blush`, `flustered`, `sad`, `smirk`) plays a pose and an emote over the art.
 - **Scene:** add to `scenes`. Nodes support `who`, `expr`, `text`, `next`, `end`, `choices` (`{ text, aff, flag, next }`) and `branch` (`[{ flag, next }]`, where the first matching flag wins).
 - **Décor:** add to `decor`, then draw it in `js/cafe.js` (the `decor` object, `drawBackground`, and the `preview` sizes).
 

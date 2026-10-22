@@ -88,18 +88,12 @@
   const characters = [
     {
       id: 'milo', name: 'Milo', age: 24, title: 'The Shy Sketcher',
-      role: 'Morning barista', color: '#9fc3dd',
-      personality: 'Gentle, soft-spoken and observant. Blushes easily, apologizes too much, and notices everything.',
+      role: 'Morning barista', color: '#f6cdd3',
+      personality: 'Gentle, soft-spoken and observant. Hides in oversized cardigans, blushes easily, apologizes too much, and notices everything.',
       likes: 'Sketchbooks, rainy windows, oat milk lattes',
       favorite: 'oat_latte',
       unlockHint: 'Already works at the café.',
       unlock: { type: 'intro' },
-      look: {
-        skin: '#f8dccb', skinShade: '#eab9a6', hair: '#f4e3cf', hairShade: '#d9bd9f', hairLight: '#fff6ea',
-        hairStyle: 'fluffy', ear: 'fold', earInner: '#f7b3c0', eyes: '#6f9c86', eyeStyle: 'soft',
-        build: 'slim', outfit: 'sweater', cloth: '#a9cbe3', clothShade: '#86aecb', clothLight: '#d6e8f4',
-        tail: '#f4e3cf', tailTip: '#d9bd9f', blush: true, accessory: 'pencil', line: '#4a2b2b',
-      },
       lines: {
         meet: 'Oh! Um, hi again, boss. I\'m on my break. Could I order like a real customer?',
         greet: ['Morning! I mean, hi. It\'s afternoon. Hi.', 'Is it okay if I sit by the window again?', 'I drew the latte art queue. Want to see later?'],
@@ -111,18 +105,12 @@
     },
     {
       id: 'riven', name: 'Riven', age: 26, title: 'The Midnight Regular',
-      role: 'Night-owl musician', color: '#8a7fb5',
-      personality: 'Dry humor, dark clothes, dramatic eyeliner. Pretends not to care, then remembers your birthday.',
+      role: 'Night-owl musician', color: '#b993b4',
+      personality: 'Dry humor, a magenta streak, a choker and too many buckles. Pretends not to care, then remembers your birthday.',
       likes: 'Vinyl, fire escapes, coffee strong enough to stand a spoon in',
       favorite: 'midnight',
       unlockHint: 'Drops by on your first day.',
       unlock: { type: 'visit' },
-      look: {
-        skin: '#f1d6d0', skinShade: '#d9b0aa', hair: '#2b2236', hairShade: '#1a1422', hairLight: '#5a4a75',
-        hairStyle: 'emo', ear: 'tall', earInner: '#c98aa8', eyes: '#c0476a', eyeStyle: 'liner',
-        build: 'average', outfit: 'hoodie', cloth: '#2f2a3a', clothShade: '#1f1b28', clothLight: '#4b4360',
-        tail: '#2b2236', tailTip: '#5a4a75', blush: false, accessory: 'choker', fang: true, line: '#1a1018',
-      },
       lines: {
         meet: 'So you\'re the new owner. Cool. Don\'t ruin the coffee.',
         greet: ['Hey. Don\'t make it weird that I\'m here again.', 'It\'s too bright out. Your café is the correct amount of dim.', 'I wrote a song about your espresso machine. It\'s sad.'],
@@ -134,20 +122,12 @@
     },
     {
       id: 'atlas', name: 'Atlas', age: 29, title: 'The Gentle Giant',
-      role: 'Moving-company muscle, secret baker', color: '#e9a07a',
+      role: 'Moving-company muscle, secret baker', color: '#eab48f',
       personality: 'Huge, warm and earnest. Looks like he could bench-press the counter. Gets flustered by compliments.',
       likes: 'Sweet drinks, frosting roses, being helpful',
       favorite: 'strawberry_cloud',
       unlockHint: 'Drops by on your first day.',
       unlock: { type: 'visit' },
-      look: {
-        skin: '#cf956f', skinShade: '#b27a57', hair: '#e07b3f', hairShade: '#b85c2a', hairLight: '#f3a265',
-        hairStyle: 'short', ear: 'pointy', earInner: '#f2c1a5', eyes: '#6b4a2b', eyeStyle: 'bright',
-        build: 'broad', outfit: 'apron', cloth: '#fbf1e4', clothShade: '#e5d6c3', clothLight: '#ffffff',
-        apron: '#ef8f9d', apronShade: '#d8707f',
-        tail: '#e07b3f', tailTip: '#fbe7d4', tailStripes: '#b85c2a', earStripes: true, blush: true, fang: true,
-        thickTail: true, line: '#3d2318',
-      },
       lines: {
         meet: 'Hi! Sorry, I know I\'m blocking the doorway. I always am. Is the pink drink still on the menu?',
         greet: ['Boss! Hi! I carried your delivery in, hope that\'s okay.', 'I did leg day. I deserve something pink.', 'Your plant looks happy. I talked to it.'],
@@ -159,18 +139,12 @@
     },
     {
       id: 'lumi', name: 'Lumi', age: 25, title: 'The Runway Darling',
-      role: 'Fashion stylist and trendsetter', color: '#d6a6e0',
+      role: 'Fashion stylist and trendsetter', color: '#dccdf0',
       personality: 'Confident, glamorous and teasing, with a soft heart under the lip gloss. Notices good taste immediately.',
       likes: 'Ribbons, window displays, matcha with heart sprinkles',
       favorite: 'blossom_matcha',
       unlockHint: 'Only visits stylish cafés. Own 2 décor items.',
       unlock: { type: 'decor', count: 2 },
-      look: {
-        skin: '#f9ddd6', skinShade: '#ecbdb3', hair: '#d4b0ec', hairShade: '#b48fd3', hairLight: '#f3dcff', hairTip: '#f7aac1',
-        hairStyle: 'long', ear: 'pointy', earInner: '#f7b3c0', eyes: '#d0567e', eyeStyle: 'lashes',
-        build: 'slim', outfit: 'blouse', cloth: '#fff3f6', clothShade: '#f2d0db', clothLight: '#ffffff',
-        tail: '#d4b0ec', tailTip: '#f7aac1', blush: true, accessory: 'bow', lips: '#e0607a', line: '#4a2640',
-      },
       lines: {
         meet: 'So this is the café everyone\'s whispering about. Cute lights. I approve, darling.',
         greet: ['Darling! Your window could use more ribbon. Later.', 'Don\'t look at my shoes, look at my eyes. ...Okay, look at the shoes too.', 'I brought you a sticker. It\'s a heart. Obviously.'],
@@ -182,7 +156,12 @@
     },
   ];
 
-  /* ---------- Neighborhood regulars (non-romanceable customers) ---------- */
+  /* Character art lives in assets/characters/<id>-{bust,full,chibi}.webp
+   * (sliced from the sheets in assets/source by tools/slice-art.py). */
+  const artKinds = ['bust', 'full', 'chibi'];
+
+  /* ---------- Neighborhood regulars (non-romanceable customers) ----------
+   * Regulars have no illustrations yet, so they use procedural pixel sprites. */
   const regulars = [
     { id: 'juniper', name: 'Juniper', look: { skin: '#f4d2bd', hair: '#7a5a8c', hairStyle: 'long', cloth: '#9ec9b3', outfit: 'sweater', eyes: '#4b6b8a', ear: 'pointy' } },
     { id: 'pip', name: 'Pip', look: { skin: '#e8b996', hair: '#3d2b25', hairStyle: 'fluffy', cloth: '#f2b880', outfit: 'hoodie', eyes: '#3d6b4a', ear: 'pointy' } },
@@ -383,7 +362,7 @@
         n3: { who: 'narr', expr: 'happy', text: 'Afterward he sits on an upturned crate, sipping the last Strawberry Cloud of the night with visible joy.', next: 'n4' },
         n4: { who: 'atlas', expr: 'blush', text: 'Can I tell you something embarrassing? I bake. Little cakes. With frosting flowers.', next: 'c2' },
         c2: {
-          who: 'narr', expr: 'flustered', text: 'His round ears go flat, waiting for you to laugh.',
+          who: 'narr', expr: 'flustered', text: 'His ears go flat, waiting for you to laugh.',
           choices: [
             { text: 'Bring some in! We\'ll sell them.', aff: 7, flag: 'atlas_bake', next: 'd1' },
             { text: 'That\'s adorable.', aff: 5, next: 'd2' },
@@ -400,7 +379,7 @@
     atlas_2: {
       title: 'Flour & Frosting', char: 'atlas', bg: 'cafe-day',
       nodes: {
-        start: { who: 'narr', expr: 'happy', text: 'Saturday morning. Atlas arrives with a box of piping tips and an apron covered in tiny strawberries.', next: 'br' },
+        start: { who: 'narr', expr: 'happy', text: 'Saturday morning. Atlas arrives with a box of piping tips and his favorite apron, the one with the heart pin.', next: 'br' },
         br: { branch: [{ flag: 'atlas_bake', next: 'b1' }, { flag: 'atlas_teach', next: 'b2' }], next: 'b3' },
         b1: { who: 'atlas', expr: 'happy', text: 'I made a batch for the display case! Look, a tag! "Atlas\'s Blossom Cakes"!', next: 'n2' },
         b2: { who: 'atlas', expr: 'happy', text: 'You remembered! Okay, first lesson: the frosting knows when you\'re nervous.', next: 'n2' },
@@ -543,7 +522,7 @@
   ];
 
   window.GAME_DATA = {
-    steps, ingredients, recipes, tiers, characters, regulars, regularLines, decor, scenes, routes, firstShift,
+    steps, ingredients, recipes, tiers, characters, artKinds, regulars, regularLines, decor, scenes, routes, firstShift,
     economy: { startCoins: 25, patienceSeconds: 45, pourRate: 0.62 },
   };
 })();
