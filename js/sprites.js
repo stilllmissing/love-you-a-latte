@@ -286,5 +286,12 @@
     ], { o: '#4a2b2b', y: '#f2c14e' }, 'i-lock'),
   };
 
+  /* Your painted UI art replaces the pixel-grid icons where it exists. */
+  const art = (cls, path) => `<img class="icon ${cls}" src="assets/ui/${path}.webp" alt="" draggable="false">`;
+  icons.heart = art('i-heart', 'hearts/heart-small');
+  icons.heartEmpty = art('i-heart i-empty', 'hearts/heart-empty');
+  icons.coin = art('i-coin', 'icons/coin');
+  icons.lock = art('i-lock', 'icons/lock');
+
   window.Sprites = { cup, grid, icons, mix, darken, lighten, liquidColor };
 })();

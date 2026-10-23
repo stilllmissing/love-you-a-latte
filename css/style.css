@@ -924,3 +924,7 @@ img.item { display: block; max-width: 100%; height: auto; user-select: none; -we
 .pitcher { right: -4%; top: -64%; width: 46%; }
 .cup-teacup .pitcher { right: -10%; }
 .cup-glass .pitcher { right: -26%; top: -84%; width: 70%; }
+
+/* UI kit art as icons */
+img.icon { image-rendering: auto; object-fit: contain; }
+img.icon.i-empty { opacity: 0.85; }

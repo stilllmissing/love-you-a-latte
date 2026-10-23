@@ -170,11 +170,28 @@
   const whoName = (who) => person(who).name;
 
   /* ---------- Screens ---------- */
+  function moodFor(name) {
+    if (name === 'drink') return 'busy';
+    if (name === 'cafe') return (G.shift && G.phase !== 'hub') ? 'busy' : 'light';
+    if (name === 'dialogue') {
+      const d = G.dlg;
+      if (d && d.sc.mood) return d.sc.mood;
+      const id = (d && d.id) || '';
+      if (/confession|ending/.test(id)) return 'romance';
+      if (/rain|haunt|ghost/.test(id)) return 'mystery';
+      if (/dream|hidden/.test(id)) return 'dream';
+      const bg = d && d.sc.bg;
+      return bg === 'cafe-night' || bg === 'dusk' || bg === 'stars' ? 'reflect' : 'light';
+    }
+    return name === 'title' ? 'light' : 'reflect';
+  }
+
   function show(name) {
     if ((name === 'gallery' || name === 'shop') && G.screen !== 'gallery' && G.screen !== 'shop') G.returnTo = G.screen;
     $$('.screen').forEach((s) => s.classList.toggle('active', s.id === 'screen-' + name));
     G.screen = name;
     document.body.dataset.screen = name;
+    if (name !== 'gallery' && name !== 'shop') Sfx.music(moodFor(name));
     placeToasts();
     const el = $('#screen-' + name);
     el.scrollTop = 0;
@@ -397,6 +414,7 @@
   };
 
   function beginShift() {
+    Sfx.file('bell');
     save.phase = 'shift';
     persist();
     G.shift = {

@@ -113,3 +113,19 @@ my_scene: {
 - **Scheduling:** add to `events` (a day and `morning`/`evening`), `scripted` (a customer with an `intro`/`outro` scene), `routes` (a character's evening scenes), `chats`, or `moments` (little scenes gated by a `when` function).
 
 Content in `data.js` is similar: add a recipe to `recipes`, a regular to `guests` (art folder plus a list of `beats`), or décor to `decor` (give it an `art` prop name that matches a file in `assets/props/` and a position class in the CSS).
+
+### Music and sound (optional, not included)
+
+The game plays recorded audio if you put files in `assets/audio/` (the folder is git-ignored, so copyrighted tracks never get committed or published). Without them it uses small synthesized effects and stays silent otherwise.
+
+| File (`.mp3` or `.ogg`) | Plays during |
+| --- | --- |
+| `busy` | Shifts and drink-making |
+| `light` | Title, the café between shifts, daytime scenes |
+| `reflect` | Results, evenings, night and dusk scenes |
+| `mystery` | Rain Check and other eerie scenes |
+| `romance` | Confessions and endings |
+| `dream` | Dream or hidden-route scenes |
+| `bell`, `pour-coffee`, `pour-milk`, `whisk` | Sound effects (only `bell` is wired so far: shift start) |
+
+A scene can pick its own track with `mood: 'romance'`.

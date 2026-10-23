@@ -40,8 +40,57 @@
     blip: () => tone(880 + Math.random() * 80, 0.025, { type: 'square', vol: 0.012 }),
   };
 
+  /* Optional recorded audio. Drop files into assets/audio/ (not committed; see README).
+     Music moods: busy, reflect, mystery, light, romance, dream (.mp3 or .ogg).
+     Sound files: bell, pour-coffee, pour-milk, whisk (.mp3 or .ogg). Missing files are skipped. */
+  const EXT = ['mp3', 'ogg'];
+  const missing = new Set();
+  const cache = {};
+  function load(name, loop) {
+    if (cache[name]) return cache[name];
+    let i = 0;
+    const a = new Audio();
+    a.loop = !!loop;
+    a.preload = 'auto';
+    a.addEventListener('error', () => {
+      if (++i < EXT.length) a.src = `assets/audio/${name}.${EXT[i]}`;
+      else missing.add(name);
+    });
+    a.src = `assets/audio/${name}.${EXT[0]}`;
+    cache[name] = a;
+    return a;
+  }
+  let mood = null, track = null, fade = null;
+  function fadeTo(a, vol, done) {
+    clearInterval(a._f);
+    a._f = setInterval(() => {
+      a.volume = Math.max(0, Math.min(1, a.volume + (vol > a.volume ? 0.05 : -0.05)));
+      if (Math.abs(a.volume - vol) < 0.051) { a.volume = vol; clearInterval(a._f); done && done(); }
+    }, 60);
+  }
+  const MUSIC_VOL = 0.35;
+
   window.Sfx = {
     play(name) { if (!enabled) return; try { sounds[name] && sounds[name](); } catch (e) { /* audio is optional */ } },
-    setEnabled(v) { enabled = !!v; },
+    file(name, vol = 0.6) {
+      if (!enabled || missing.has(name)) return;
+      try { const a = load(name, false); a.volume = vol; a.currentTime = 0; a.play().catch(() => {}); } catch (e) { /* optional */ }
+    },
+    music(next) {
+      mood = next || null;
+      if (!enabled) return this.stopMusic();
+      if (track && track._mood === mood) return;
+      const old = track;
+      track = null;
+      if (old) fadeTo(old, 0, () => old.pause());
+      if (!mood || missing.has(mood)) return;
+      const a = load(mood, true);
+      a._mood = mood;
+      a.volume = 0;
+      a.play().then(() => fadeTo(a, MUSIC_VOL)).catch(() => {});
+      track = a;
+    },
+    stopMusic() { if (track) { const t = track; track = null; fadeTo(t, 0, () => t.pause()); } },
+    setEnabled(v) { enabled = !!v; if (!enabled) this.stopMusic(); else if (mood) { const m = mood; mood = null; this.music(m); } },
   };
 })();
