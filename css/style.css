@@ -1022,3 +1022,7 @@ img.icon.i-empty { opacity: 0.85; }
 .shop-art:not(.has-card) { background: url(../assets/ui/frames/catframe-pink.webp) center / 100% 100% no-repeat; border: 0; padding: 14px; aspect-ratio: 276 / 225; height: auto; }
 .shop-item.owned .shop-art:not(.has-card) { background-image: url(../assets/ui/frames/catframe-lavender.webp); }
 .shop-buy { min-height: 56px; }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: none; border: 0; box-shadow: none; padding: 4px 0; }
+.toggle .knob { display: none; }
+.toggle-img { height: 44px; width: auto; flex: 0 0 auto; }
+.toggle:focus-visible .toggle-img { filter: drop-shadow(0 0 4px #6b63ff); }

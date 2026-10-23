@@ -51,7 +51,7 @@
     return s;
   }
   let save = loadSave();
-  const settings = Object.assign({ sound: true, textSpeed: 'normal', reduceMotion: false }, store.get(SET_KEY) || {});
+  const settings = Object.assign({ sound: true, music: true, textSpeed: 'normal', reduceMotion: false }, store.get(SET_KEY) || {});
   const persist = () => { if (save) store.set(SAVE_KEY, save); };
   const persistSettings = () => store.set(SET_KEY, settings);
 
@@ -1395,10 +1395,11 @@
 
   function openSettings() {
     const speedBtn = (v, l) => `<button class="seg ${settings.textSpeed === v ? 'on' : ''}" data-action="set-speed" data-v="${v}" aria-pressed="${settings.textSpeed === v}">${l}</button>`;
-    const toggle = (k, l) => `<button class="toggle" data-action="toggle-setting" data-k="${k}" role="switch" aria-checked="${!!settings[k]}"><span>${l}</span><span class="knob" aria-hidden="true"></span></button>`;
+    const toggle = (k, l) => `<button class="toggle" data-action="toggle-setting" data-k="${k}" role="switch" aria-checked="${!!settings[k]}"><span>${l}</span><img class="toggle-img" src="assets/ui/settings/toggle-${settings[k] ? 'on' : 'off'}.webp" alt="" draggable="false"></button>`;
     openModal(`
       <h2 id="modal-title">Settings</h2>
       <div class="set-list">
+        ${toggle('music', 'Music')}
         ${toggle('sound', 'Sound effects')}
         ${toggle('reduceMotion', 'Reduce motion')}
         <div class="set-row"><span>Text speed</span><div class="segs" role="group" aria-label="Text speed">${speedBtn('slow', 'Slow')}${speedBtn('normal', 'Normal')}${speedBtn('instant', 'Instant')}</div></div>
@@ -1418,6 +1419,7 @@
 
   function applySettings() {
     Sfx.setEnabled(settings.sound);
+    Sfx.setMusic(settings.music);
     document.documentElement.classList.toggle('reduce-motion', !!settings.reduceMotion);
   }
 
@@ -1580,6 +1582,7 @@
       const k = el.dataset.k;
       settings[k] = !settings[k];
       el.setAttribute('aria-checked', String(settings[k]));
+      const ti = el.querySelector('.toggle-img'); if (ti) ti.src = `assets/ui/settings/toggle-${settings[k] ? 'on' : 'off'}.webp`;
       persistSettings(); applySettings(); Sfx.play('tap');
     },
     'set-speed': (el) => {

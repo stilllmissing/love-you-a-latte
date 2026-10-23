@@ -60,7 +60,7 @@
     cache[name] = a;
     return a;
   }
-  let mood = null, track = null, held = null, amb = false;
+  let mood = null, track = null, held = null, amb = false, musicOn = true;
   function fadeTo(a, vol, done) {
     clearInterval(a._f);
     a._f = setInterval(() => {
@@ -84,14 +84,14 @@
     release() { if (held) { const h = held; held = null; fadeTo(h, 0, () => h.pause()); } },
     ambience(on) {
       amb = !!on;
-      if (!enabled || missing.has('ambience')) return;
+      if (!enabled || !musicOn || missing.has('ambience')) return;
       const a = load('ambience', true);
       if (amb && a.paused) { a.volume = 0; a.play().then(() => fadeTo(a, 0.22)).catch(() => {}); }
       else if (!amb && !a.paused) fadeTo(a, 0, () => a.pause());
     },
     music(next) {
       mood = next || null;
-      if (!enabled) return this.stopMusic();
+      if (!enabled || !musicOn) return this.stopMusic();
       if (track && track._mood === mood) return;
       const old = track;
       track = null;
@@ -104,6 +104,11 @@
       track = a;
     },
     stopMusic() { if (track) { const t = track; track = null; fadeTo(t, 0, () => t.pause()); } },
+    setMusic(v) {
+      musicOn = v !== false;
+      if (!musicOn) { this.stopMusic(); if (cache.ambience) cache.ambience.pause(); }
+      else { if (mood) { const m = mood; mood = null; this.music(m); } this.ambience(amb); }
+    },
     setEnabled(v) {
       enabled = !!v;
       if (!enabled) { this.stopMusic(); this.release(); if (cache.ambience) cache.ambience.pause(); }
