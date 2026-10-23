@@ -1026,3 +1026,8 @@ img.icon.i-empty { opacity: 0.85; }
 .toggle .knob { display: none; }
 .toggle-img { height: 44px; width: auto; flex: 0 0 auto; }
 .toggle:focus-visible .toggle-img { filter: drop-shadow(0 0 4px #6b63ff); }
+.stars-badge { height: 76px; width: auto; animation: pop 0.5s ease both; filter: drop-shadow(0 3px 0 rgba(74, 43, 43, 0.25)); }
+.g-portrait.g-framed { background: none; border: 0; box-shadow: none; padding: 0; aspect-ratio: auto; height: auto; overflow: visible; }
+.g-cardimg { width: 100%; height: auto; display: block; filter: drop-shadow(0 3px 0 rgba(74, 43, 43, 0.25)); }
+.g-card:hover .g-cardimg, .g-card:focus-visible .g-cardimg { filter: drop-shadow(0 3px 0 rgba(74, 43, 43, 0.25)) brightness(1.05); }
+.g-card .g-portrait.g-framed, .g-card.locked .g-portrait.g-framed { background: none !important; }

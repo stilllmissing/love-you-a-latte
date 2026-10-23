@@ -937,7 +937,7 @@
     $('#results-card').innerHTML = `
       <p class="eyebrow">Day ${save.day} complete${sh.rush ? ' · Rush hour' : ''}</p>
       <h2 id="results-heading">Closing Time</h2>
-      <div class="stars" aria-label="${stars} out of 5 stars">${[1, 2, 3, 4, 5].map((i) => `<span class="star" style="--i:${i}">${i <= stars ? S.icons.star : S.icons.starEmpty}</span>`).join('')}</div>
+      <div class="stars" aria-label="${stars} out of 5 stars"><img class="stars-badge" src="assets/ui/badges/stars-${stars}.webp" alt="" draggable="false"></div>
       <p class="sat">Customer satisfaction <b>${Math.round(satAvg * 100)}%</b></p>
       <dl class="stats">
         <div><dt>Orders served</dt><dd>${sh.customers.length} <small>(${sh.correct} correct)</small></dd></div>
@@ -1239,7 +1239,7 @@
       const isNew = save && save.newBadges.includes(c.id);
       return `<button class="g-card ${met ? '' : 'locked'}" data-action="char-detail" data-id="${c.id}" style="--accent:${c.color}" aria-label="${met ? c.name + ', ' + tierOf(a).name : 'Locked character'}">
         ${isNew ? '<span class="badge-new">NEW</span>' : ''}
-        <div class="g-portrait">${portrait(c.id, { locked: !met })}${met ? '' : `<span class="g-lock">${S.icons.lock}</span>`}</div>
+        <div class="g-portrait g-framed"><img class="g-cardimg" src="assets/ui/cards/${met ? 'normal' : 'locked'}-${c.id}.webp" alt="" draggable="false"></div>
         <div class="g-name">${met ? `${c.name} <small>${c.age}</small>` : '???'}</div>
         <div class="g-sub">${met ? esc(c.title) : esc(c.unlockHint)}</div>
         ${met ? `<div class="meter meter-sm"><span style="--to:${a}%"></span></div><div class="g-tier">${tierOf(a).name}</div>` : ''}

@@ -75,11 +75,15 @@ Eight neighborhood **regulars** each carry a small story across the month: Junip
 | `js/sprites.js` | Small fallback icons |
 | `js/audio.js` | Small synthesized sound effects (Web Audio) |
 | `assets/characters/<id>/` | Cast: `bust.webp`, `full.webp`, `bust-<expression>.webp`, `chibi-<expression>.webp`, `turn-0…7.webp`. Guests: `full.webp` and three busts. Player looks: `player-a…l` |
+| `assets/fx/`, `steps/`, `work/`, `poses/`, `machines/` | Sparkles, hearts, coins, steam, splashes, pour streams; staged drink art; staff work poses; regulars' stand/walk/sit poses; machine animations (not used in game yet) |
 | `assets/scenes/`, `props/`, `items/`, `ui/` | Café backgrounds, counter and décor, drink and ingredient art, UI kit pieces |
 | `assets/source/` | The original art sheets |
 | `tools/slice-art.py` | Re-slices the cast and protagonist sheets (`pip install pillow numpy scipy`, then `python3 tools/slice-art.py`) |
 | `tools/slice-assets.py` | Re-slices the regulars sheets (`python3 tools/slice-assets.py`; add `all` for scenes, props and items) |
 | `tools/slice-ui.py` | Re-slices the UI kit sheets into `assets/ui/` |
+| `tools/slice-grid.py` | Cuts the frame sheets: effects, pour streams, staged drinks, machines, work poses into `assets/fx`, `steps`, `machines`, `work` |
+| `tools/slice-poses.py` | Cuts the regulars' stand/walk/sit sheets into `assets/poses/<id>-0…7.webp` |
+| `tools/gen-dims.py` | Rewrites `js/artdims.js` (drink frame sizes) after re-slicing `steps` |
 
 Console helpers for testing: `PP.skipTo(day)`, `PP.evening()`, `PP.save`.
 
@@ -128,6 +132,11 @@ The game plays recorded audio if you put files in `assets/audio/` (the folder is
 | `dream` | Dream or hidden-route scenes |
 | `ambience` | Café background loop during shifts and drink-making |
 | `bell` | A customer walks in |
+
+The music and sound effects are also optional per player: Settings has separate Music and Sound effects switches.
+
+| | |
+| --- | --- |
 | `pour-coffee`, `whisk`, `pour-milk` | Held while pouring an espresso, matcha or any other base |
 
 A scene can pick its own track with `mood: 'romance'`.
