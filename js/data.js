@@ -355,7 +355,10 @@
     { id: 'chalkboard', name: 'Chalkboard Menu', price: 260, bonus: 0.06, art: 'chalkboard', desc: 'A framed sign with a latte-art cat. Milo’s drawings finally get a wall.' },
     { id: 'lamp', name: 'Petal Lamp', price: 320, bonus: 0.08, art: 'pendant-lamp', desc: 'A pink glass pendant that makes every latte look golden.' },
     { id: 'bookshelf', name: 'Corner Bookshelf', price: 420, bonus: 0.06, art: 'bookshelf', desc: 'Secondhand paperbacks and a very small framed cat.' },
-    { id: 'tower', name: 'Cat Tower', price: 560, bonus: 0.12, art: 'cat-tower', desc: 'A plush lavender tower for Biscuit, the café’s resident cat.' },
+    { id: 'armchair', name: 'Velvet Armchair', price: 360, bonus: 0.08, art: 'armchair', card: 'armchair', desc: 'A scalloped pink armchair with a blanket someone left on purpose.' },
+    { id: 'table', name: 'Round Café Table', price: 480, bonus: 0.08, art: 'table', card: 'table', desc: 'A little marble table with roses and a tea set for two.' },
+    { id: 'tower', name: 'Cat Tower', price: 560, bonus: 0.12, art: 'cat-tower', card: 'tower', desc: 'A plush lavender tower for Biscuit, the café’s resident cat.' },
+    { id: 'espresso', name: 'Rose Espresso Machine', price: 700, bonus: 0.1, art: 'espresso-machine', card: 'espresso', desc: 'Pink, gleaming, and finally a machine that doesn’t hiss at you.' },
   ];
 
   window.GAME_DATA = {

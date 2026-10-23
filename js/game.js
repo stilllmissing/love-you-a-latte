@@ -1350,7 +1350,9 @@
       const owned = save.decor.includes(d.id);
       const can = save.coins >= d.price;
       return `<article class="shop-item ${owned ? 'owned' : ''}">
-        <div class="shop-art" data-preview="${d.id}"><img src="assets/props/${d.art}.webp" alt="" draggable="false"></div>
+        <div class="shop-art ${d.card ? 'has-card' : ''}" data-preview="${d.id}">${d.card
+          ? `<img class="shop-card" src="assets/ui/shop/${d.card}-${owned ? 'owned' : can ? 'normal' : 'locked'}.webp" alt="" draggable="false">`
+          : `<img src="assets/props/${d.art}.webp" alt="" draggable="false">`}</div>
         <div class="shop-info"><h3>${esc(d.name)}</h3><p>${esc(d.desc)}</p><span class="tag">+${Math.round(d.bonus * 100)}% tips</span></div>
         <button class="btn ${owned ? '' : can ? 'btn-primary' : ''} shop-buy" data-action="buy" data-id="${d.id}" ${owned || !can ? 'disabled' : ''}>
           ${owned ? 'Placed ✓' : can ? `Buy ${S.icons.coin}${d.price}` : `${S.icons.coin}${d.price}<small>need ${d.price - save.coins}</small>`}
