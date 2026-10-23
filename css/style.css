@@ -987,3 +987,23 @@ img.icon.i-empty { opacity: 0.85; }
 .pitcher { right: auto; left: 46%; top: -62%; width: 50%; transform: rotate(-30deg); transform-origin: 20% 80%; }
 .spill-fx { position: absolute; left: 50%; bottom: -8%; width: 120%; transform: translateX(-50%); pointer-events: none; image-rendering: pixelated; animation: dropIn 0.2s ease both; }
 .spill-fx { width: 70%; bottom: -2%; }
+
+/* ---------- Sprite effects, seated regulars and the helper at the counter ---------- */
+.fx-spr { display: block; height: 1.6em; width: auto; image-rendering: pixelated; }
+.float-fx.fx-heart .fx-spr { height: 2.2em; }
+.float-fx.fx-sparkle .fx-spr { height: 3em; }
+.float-fx.fx-coin { display: inline-flex; align-items: center; gap: 4px; }
+.float-fx.fx-coin .fx-spr { height: 1.5em; }
+.coin-spin { animation: coinspin 0.7s linear infinite; }
+@keyframes coinspin { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.15); } }
+.fx-sparkle { animation: sparklePop 0.9s ease both; }
+@keyframes sparklePop { from { opacity: 0; transform: translate(-50%, 0) scale(0.4); } 40% { opacity: 1; transform: translate(-50%, -8px) scale(1.1); } to { opacity: 0; transform: translate(-50%, -22px) scale(1); } }
+.served-cup { position: absolute; }
+.served-cup .steam { position: absolute; left: 50%; bottom: 80%; height: 90%; width: auto; transform: translateX(-50%); opacity: 0.85; animation: steamUp 1.6s ease-in-out infinite; pointer-events: none; }
+@keyframes steamUp { 0% { opacity: 0; transform: translate(-50%, 10px); } 40% { opacity: 0.9; } 100% { opacity: 0; transform: translate(-50%, -16px); } }
+.seat { position: absolute; bottom: 31%; height: 29%; pointer-events: none; }
+.seat-0 { right: 4%; }
+.seat-1 { right: 22%; }
+.seat-img { height: 100%; width: auto; image-rendering: auto; filter: drop-shadow(0 2px 2px rgba(74, 43, 43, 0.3)); animation: breathe 3.6s ease-in-out infinite; }
+.helper { position: absolute; right: 1%; bottom: 14%; height: 58%; pointer-events: none; z-index: 3; }
+.helper-img { height: 100%; width: auto; filter: drop-shadow(0 2px 2px rgba(74, 43, 43, 0.3)); }

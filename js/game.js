@@ -241,11 +241,39 @@
     setTimeout(() => el.remove(), 1600);
   }
 
+  const fxImg = (name, cls = '') => `<img class="fx-spr ${cls}" src="assets/fx/${name}.webp" alt="" draggable="false">`;
   function burstHearts(container, n = 6, x = 50, y = 40) {
     for (let i = 0; i < n; i++) {
-      setTimeout(() => floatFx(container, S.icons.heart, x + (Math.random() * 30 - 15), y + Math.random() * 10, 'fx-heart'), i * 90);
+      setTimeout(() => floatFx(container, fxImg('heart-' + (1 + (i % 3))), x + (Math.random() * 30 - 15), y + Math.random() * 10, 'fx-heart'), i * 90);
     }
   }
+  function sparkleAt(container, x, y) {
+    floatFx(container, fxImg('sparkle-3'), x, y, 'fx-sparkle');
+    setTimeout(() => floatFx(container, fxImg('sparkle-2'), x + 10, y - 8, 'fx-sparkle'), 160);
+  }
+
+  /* Regulars you've served this shift stay on to sit and sip. */
+  const SIT = { cleo: [2, 3] };
+  function seatsHtml() {
+    const sh = G.shift;
+    if (!sh || !sh.seated || !sh.seated.length) return '';
+    return sh.seated.slice(-2).map((id, i) => {
+      const [a, b] = SIT[id] || [6, 7];
+      return `<div class="seat seat-${i}"><img class="seat-img" data-a="${a}" data-b="${b}" data-id="${id}" src="assets/poses/${id}-${a}.webp" alt="" draggable="false"></div>`;
+    }).join('');
+  }
+  /* The staff member helping today, at the machine. */
+  function helperHtml(pose = 'idle') {
+    const id = G.shift && G.shift.helper;
+    if (!id) return '';
+    return `<div class="helper helper-${pose}"><img class="helper-img" data-id="${id}" data-pose="${pose}" src="assets/work/${id}-${pose}-0.webp" alt="" draggable="false"></div>`;
+  }
+  let animTick = 0;
+  setInterval(() => {
+    animTick++;
+    $$('.helper-img').forEach((el) => { el.src = `assets/work/${el.dataset.id}-${el.dataset.pose}-${animTick % 4}.webp`; });
+    $$('.seat-img').forEach((el) => { el.src = `assets/poses/${el.dataset.id}-${animTick % 6 < 5 ? el.dataset.a : el.dataset.b}.webp`; });
+  }, 520);
 
   /* ---------- HUD ---------- */
   function coinHtml(n) { return `${S.icons.coin}<span>${n}</span>`; }
@@ -526,7 +554,7 @@
     const recipe = recipeById[c.drink];
     const expr = G.phase === 'served' ? c.reaction : isCast(c.who) && !isMet(c.who) ? 'blush' : 'neutral';
     const cheer = G.phase === 'served' && anim === 'react' ? (c.result.correct ? 'cheer' : 'oops') : '';
-    cust.innerHTML = staffHtml(cheer) + `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'counter', expr)}</div></div>`;
+    cust.innerHTML = seatsHtml() + helperHtml(G.phase === 'served' && anim === 'react' ? 'serve' : G.phase === 'ordered' ? 'note' : 'idle') + staffHtml(cheer) + `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'counter', expr)}</div></div>`;
 
     let line;
     if (G.phase === 'arrive') line = c.intro && !c.introDone ? '' : (c.greetLine || (c.greetLine = fill(greetLine(c))));
@@ -853,6 +881,7 @@
     c.reaction = correct ? (isCast(c.who) && pour !== 'perfect' && c.drink === fav ? (c.who === 'riven' ? 'smirk' : 'blush') : 'happy') : 'sad';
     c.reactText = fill(reactLine(c, correct));
     G.phase = 'served';
+    if (c.guest) { const sh = G.shift; sh.seated = (sh.seated || []).filter((x) => x !== c.who).concat(c.who); }
     G.drink = null;
     persist();
 
@@ -863,12 +892,13 @@
     cupEl.className = 'served-cup';
     // a correct order is the finished drink; a wrong one is just the cup you made
     const cupArt = correct ? recipe.art : (D.ingredients.cup.find((x) => x.id === c.result.sel.cup) || {}).art;
-    cupEl.innerHTML = artImg(cupArt);
+    cupEl.innerHTML = artImg(cupArt) + (correct ? fxImg('steam-2', 'steam') : '');
     fx.appendChild(cupEl);
     setTimeout(() => cupEl.remove(), 2600);
     if (correct) {
       Sfx.play('coin');
-      floatFx(fx, `${S.icons.coin}+${coins + tip}`, 50, 30, 'fx-coin');
+      floatFx(fx, `${fxImg('coin-0', 'coin-spin')}+${coins + tip}`, 50, 30, 'fx-coin');
+      if (c.result.pour === 'perfect') sparkleAt(fx, 50, 40);
       if (affDelta > 0) { setTimeout(() => Sfx.play('heart'), 250); burstHearts(fx, 5, 50, 22); }
     } else {
       Sfx.play('wrong');
