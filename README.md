@@ -72,13 +72,14 @@ Eight neighborhood **regulars** each carry a small story across the month: Junip
 | `js/data.js` | Ingredients, recipes, cast, protagonist (looks, pronouns), recurring guests, staff tasks, décor, economy |
 | `js/story.js` | **The story**: every scene, the calendar of events, scripted customers, little moments |
 | `js/game.js` | Engine: screens, calendar, shifts, drink making, scene runner, relationships, gallery, shop, save/load |
-| `js/cafe.js` | The café scene on a 160×120 pixel canvas, plus décor drawing |
-| `js/sprites.js` | Drink cups and UI icons drawn from pixel grids |
+| `js/sprites.js` | Small fallback icons |
 | `js/audio.js` | Small synthesized sound effects (Web Audio) |
 | `assets/characters/<id>/` | Cast: `bust.webp`, `full.webp`, `bust-<expression>.webp`, `chibi-<expression>.webp`, `turn-0…7.webp`. Guests: `full.webp` and three busts. Player looks: `player-a…l` |
+| `assets/scenes/`, `props/`, `items/`, `ui/` | Café backgrounds, counter and décor, drink and ingredient art, UI kit pieces |
 | `assets/source/` | The original art sheets |
 | `tools/slice-art.py` | Re-slices the cast and protagonist sheets (`pip install pillow numpy scipy`, then `python3 tools/slice-art.py`) |
-| `tools/slice-assets.py` | Re-slices the regulars sheets (`python3 tools/slice-assets.py`) |
+| `tools/slice-assets.py` | Re-slices the regulars sheets (`python3 tools/slice-assets.py`; add `all` for scenes, props and items) |
+| `tools/slice-ui.py` | Re-slices the UI kit sheets into `assets/ui/` |
 
 Console helpers for testing: `PP.skipTo(day)`, `PP.evening()`, `PP.save`.
 
@@ -111,4 +112,4 @@ my_scene: {
 - **Text tokens:** `{name}` `{NAME}` `{they}` `{them}` `{their}` `{theirs}` `{themself}` `{theyre}` (capitalize for sentence starts), `{closest}` `{partner}` `{waiting}` `{helper}` `{usual}` `{ausual}`. Text can also be a function of the story context.
 - **Scheduling:** add to `events` (a day and `morning`/`evening`), `scripted` (a customer with an `intro`/`outro` scene), `routes` (a character's evening scenes), `chats`, or `moments` (little scenes gated by a `when` function).
 
-Content in `data.js` is similar: add a recipe to `recipes`, a regular to `guests` (art folder plus a list of `beats`), or décor to `decor` (and draw it in `js/cafe.js`).
+Content in `data.js` is similar: add a recipe to `recipes`, a regular to `guests` (art folder plus a list of `beats`), or décor to `decor` (give it an `art` prop name that matches a file in `assets/props/` and a position class in the CSS).

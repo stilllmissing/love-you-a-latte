@@ -18,9 +18,11 @@
   <section class="screen" id="screen-title" aria-labelledby="title-heading">
     <div class="title-sky" aria-hidden="true"></div>
     <div class="title-inner">
-      <p class="eyebrow">The Velvet Paw · Bellflower Lane</p>
-      <h1 id="title-heading" class="game-title"><span>Purrfect</span><span>Pour</span></h1>
-      <p class="tagline">Some people take their coffee sweet. Others take a little time.</p>
+      <div class="title-head">
+        <p class="eyebrow">The Velvet Paw · Bellflower Lane</p>
+        <h1 id="title-heading" class="game-title"><span>Purrfect</span><span>Pour</span></h1>
+        <p class="tagline">Some people take their coffee sweet. Others take a little time.</p>
+      </div>
       <div class="title-cast" id="title-cast" aria-hidden="true"></div>
       <div class="title-menu">
         <button class="btn btn-primary btn-lg" data-action="start-day" id="btn-start">Start Day</button>
@@ -69,11 +71,12 @@
       <button class="icon-btn" data-action="open-settings" aria-label="Settings"><span aria-hidden="true">⚙</span></button>
     </header>
     <div class="scene" id="cafe-scene">
-      <div class="scene-inner">
-        <canvas class="scene-layer" id="cafe-bg" aria-hidden="true"></canvas>
-        <div class="scene-layer customers" id="cafe-customers"></div>
-        <canvas class="scene-layer scene-fg" id="cafe-fg" aria-hidden="true"></canvas>
-        <div class="fx-layer" id="cafe-fx" aria-hidden="true"></div>
+      <div class="scene-inner" aria-hidden="true">
+        <img class="scene-bg" src="assets/scenes/interior-day.webp" alt="" draggable="false">
+        <div class="decor-layer" id="decor-back"></div>
+        <div class="customers" id="cafe-customers"></div>
+        <img class="counter" src="assets/props/counter.webp" alt="" draggable="false">
+        <div class="fx-layer" id="cafe-fx"></div>
       </div>
       <div class="bubble" id="cafe-bubble" hidden></div>
     </div>
@@ -89,6 +92,7 @@
   <section class="screen" id="screen-drink" aria-label="Make the drink">
     <header class="ticket" id="drink-ticket"></header>
     <div class="station">
+      <div class="mise" id="mise" aria-hidden="true"></div>
       <div class="cup-stage" id="cup-stage"></div>
       <div class="gauge" id="pour-gauge" aria-hidden="true">
         <div class="gauge-zone"></div>
@@ -112,7 +116,7 @@
 
   <!-- DIALOGUE -->
   <section class="screen" id="screen-dialogue" aria-label="Story scene">
-    <div class="dlg-bg" id="dlg-bg"><canvas id="dlg-canvas" aria-hidden="true"></canvas></div>
+    <div class="dlg-bg" id="dlg-bg"><img id="dlg-img" alt="" hidden draggable="false"></div>
     <header class="dlg-top">
       <div class="dlg-meter" id="dlg-meter"></div>
       <button class="icon-btn" data-action="open-settings" aria-label="Settings"><span aria-hidden="true">⚙</span></button>
@@ -164,7 +168,6 @@
 <script src="js/data.js"></script>
 <script src="js/story.js"></script>
 <script src="js/sprites.js"></script>
-<script src="js/cafe.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/game.js"></script>
 </body>

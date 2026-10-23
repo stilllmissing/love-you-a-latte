@@ -16,34 +16,34 @@
 
   const ingredients = {
     cup: [
-      { id: 'mug', name: 'Mug' },
-      { id: 'glass', name: 'Tall Glass' },
-      { id: 'teacup', name: 'Teacup' },
+      { id: 'mug', name: 'Mug', art: 'items/cup-mug' },
+      { id: 'glass', name: 'Tall Glass', art: 'items/cup-glass' },
+      { id: 'teacup', name: 'Teacup', art: 'items/cup-teacup' },
     ],
     base: [
-      { id: 'espresso', name: 'Espresso', color: '#6b3a2a' },
-      { id: 'darkroast', name: 'Dark Roast', color: '#2c1914' },
-      { id: 'earlgrey', name: 'Earl Grey', color: '#b8743f' },
-      { id: 'matcha', name: 'Matcha', color: '#86b763' },
+      { id: 'espresso', name: 'Espresso', color: '#6b3a2a', art: 'items/base-espresso' },
+      { id: 'darkroast', name: 'Dark Roast', color: '#2c1914', art: 'ui/items/beans' },
+      { id: 'earlgrey', name: 'Earl Grey', color: '#b8743f', art: 'ui/items/tea-leaves' },
+      { id: 'matcha', name: 'Matcha', color: '#86b763', art: 'items/base-matcha' },
     ],
     milk: [
-      { id: 'none', name: 'No Milk', color: null },
-      { id: 'oat', name: 'Oat Milk', color: '#efdcbc' },
-      { id: 'whole', name: 'Whole Milk', color: '#fffaf2' },
+      { id: 'none', name: 'No Milk', color: null, art: 'ui/items/none' },
+      { id: 'oat', name: 'Oat Milk', color: '#efdcbc', art: 'items/milk-oat' },
+      { id: 'whole', name: 'Whole Milk', color: '#fffaf2', art: 'items/milk-whole' },
     ],
     syrup: [
-      { id: 'none', name: 'No Syrup', color: null },
-      { id: 'honey', name: 'Honey', color: '#e7b04b' },
-      { id: 'vanilla', name: 'Vanilla', color: '#f3d98f' },
-      { id: 'strawberry', name: 'Strawberry', color: '#ee6f8c' },
-      { id: 'lavender', name: 'Lavender', color: '#b09ae0' },
+      { id: 'none', name: 'No Syrup', color: null, art: 'ui/items/none' },
+      { id: 'honey', name: 'Honey', color: '#e7b04b', art: 'ui/items/honey' },
+      { id: 'vanilla', name: 'Vanilla', color: '#f3d98f', art: 'ui/items/syrup-vanilla' },
+      { id: 'strawberry', name: 'Strawberry', color: '#ee6f8c', art: 'items/syrup-strawberry' },
+      { id: 'lavender', name: 'Lavender', color: '#b09ae0', art: 'items/syrup-lavender' },
     ],
     topping: [
-      { id: 'none', name: 'Nothing', color: null },
-      { id: 'cinnamon', name: 'Cinnamon', color: '#9a5a2e' },
-      { id: 'foam', name: 'Extra Foam', color: '#f6ecdf' },
-      { id: 'ice', name: 'Ice', color: '#cfeaf5' },
-      { id: 'sprinkles', name: 'Heart Sprinkles', color: '#f0587a' },
+      { id: 'none', name: 'Nothing', color: null, art: 'ui/items/none' },
+      { id: 'cinnamon', name: 'Cinnamon', color: '#9a5a2e', art: 'items/top-cinnamon' },
+      { id: 'foam', name: 'Extra Foam', color: '#f6ecdf', art: 'items/top-cream' },
+      { id: 'ice', name: 'Ice', color: '#cfeaf5', art: 'items/top-ice' },
+      { id: 'sprinkles', name: 'Heart Sprinkles', color: '#f0587a', art: 'ui/hearts/heart-small' },
     ],
   };
 
@@ -51,37 +51,37 @@
    * `secret` recipes stay off the menu until a story moment adds them. */
   const recipes = [
     {
-      id: 'honey_oat', name: 'Honey Oat Latte', price: 12,
+      id: 'honey_oat', art: 'items/drink-heart-latte', name: 'Honey Oat Latte', price: 12,
       cup: 'mug', base: 'espresso', milk: 'oat', syrup: 'honey', topping: 'cinnamon',
       blurb: 'Espresso, oat milk and honey, with exactly as much cinnamon as Rosalie considers “a little.”',
     },
     {
-      id: 'iced_americano', name: 'Iced Americano', price: 10,
+      id: 'iced_americano', art: 'items/drink-iced-latte', name: 'Iced Americano', price: 10,
       cup: 'glass', base: 'espresso', milk: 'none', syrup: 'none', topping: 'ice',
       blurb: 'Espresso over ice and cold water. Best ordered with the seriousness of a peace treaty.',
     },
     {
-      id: 'strawberry_latte', name: 'Strawberry Latte', price: 13,
+      id: 'strawberry_latte', art: 'ui/items/mug', name: 'Strawberry Latte', price: 13,
       cup: 'mug', base: 'espresso', milk: 'whole', syrup: 'strawberry', topping: 'foam',
       blurb: 'Pink, sweet, and crowned with extra foam.',
     },
     {
-      id: 'lavender_fog', name: 'Lavender Fog', price: 13,
+      id: 'lavender_fog', art: 'items/drink-lavender-latte', name: 'Lavender Fog', price: 13,
       cup: 'teacup', base: 'earlgrey', milk: 'whole', syrup: 'lavender', topping: 'none',
       blurb: 'Earl Grey with steamed milk and a floral sweetness.',
     },
     {
-      id: 'blossom_matcha', name: 'Blossom Matcha', price: 14,
+      id: 'blossom_matcha', art: 'items/drink-strawberry-matcha', name: 'Blossom Matcha', price: 14,
       cup: 'glass', base: 'matcha', milk: 'oat', syrup: 'vanilla', topping: 'sprinkles',
       blurb: 'Matcha over vanilla oat milk, finished with heart sprinkles.',
     },
     {
-      id: 'black_coffee', name: 'Black Coffee', price: 9,
+      id: 'black_coffee', art: 'items/drink-espresso', name: 'Black Coffee', price: 9,
       cup: 'mug', base: 'darkroast', milk: 'none', syrup: 'none', topping: 'none',
       blurb: 'Dark roast, nothing else. Fuel for exams and long afternoons.',
     },
     {
-      id: 'market_special', name: 'Night Market Special', price: 15, secret: true,
+      id: 'market_special', art: 'ui/items/mug', name: 'Night Market Special', price: 15, secret: true,
       cup: 'teacup', base: 'espresso', milk: 'whole', syrup: 'honey', topping: 'sprinkles',
       blurb: 'The new menu item everyone argued about. Honey, espresso and heart sprinkles.',
     },
@@ -347,13 +347,15 @@
     wrong: ['Hmm, not quite what I asked for. That’s okay.', 'That’s… a different drink. Oh well!'],
   };
 
-  /* ---------- Décor upgrades ---------- */
+  /* ---------- Décor upgrades ----------
+   * `art` is an image in assets/props/; css/style.css positions it as .prop-<id>. */
   const decor = [
-    { id: 'plant', name: 'Potted Monstera', price: 120, bonus: 0.05, desc: 'A big leafy friend by the window. Customers relax.' },
-    { id: 'chairs', name: 'Pastel Chairs', price: 200, bonus: 0.08, desc: 'Mint and pink seats with a tiny round table.' },
-    { id: 'lights', name: 'Fairy Lights', price: 300, bonus: 0.1, desc: 'Twinkling strings across the window and ceiling.' },
-    { id: 'neon', name: 'Neon Heart Sign', price: 400, bonus: 0.1, desc: 'A soft pink glow that says "open, and in love".' },
-    { id: 'tower', name: 'Cat Tower', price: 560, bonus: 0.12, desc: 'A plush tower for Biscuit, the café’s resident cat.' },
+    { id: 'plant', name: 'Potted Monstera', price: 120, bonus: 0.05, art: 'monstera', desc: 'A big leafy friend by the window. Customers relax.' },
+    { id: 'chairs', name: 'Pastel Chairs', price: 200, bonus: 0.08, art: 'chair', desc: 'Lavender cushions and a bow, for guests who plan to stay.' },
+    { id: 'chalkboard', name: 'Chalkboard Menu', price: 260, bonus: 0.06, art: 'chalkboard', desc: 'A framed sign with a latte-art cat. Milo’s drawings finally get a wall.' },
+    { id: 'lamp', name: 'Petal Lamp', price: 320, bonus: 0.08, art: 'pendant-lamp', desc: 'A pink glass pendant that makes every latte look golden.' },
+    { id: 'bookshelf', name: 'Corner Bookshelf', price: 420, bonus: 0.06, art: 'bookshelf', desc: 'Secondhand paperbacks and a very small framed cat.' },
+    { id: 'tower', name: 'Cat Tower', price: 560, bonus: 0.12, art: 'cat-tower', desc: 'A plush lavender tower for Biscuit, the café’s resident cat.' },
   ];
 
   window.GAME_DATA = {

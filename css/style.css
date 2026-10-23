@@ -839,3 +839,88 @@ body[data-screen="cafe"] .toasts { top: auto; bottom: var(--toast-gap, 140px); }
   #screen-cafe.is-hub .panel { gap: 10px; padding-top: 10px; }
   .staff-pick { padding: 8px; gap: 6px; }
 }
+
+/* ---------- Painted café (your interior, counter and décor) ---------- */
+.scene { background: #f6d9d6; }
+.scene-inner { inset: 0; left: 0; bottom: 0; width: 100%; height: 100%; aspect-ratio: auto; transform: none; }
+.scene-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 34%; }
+.decor-layer { position: absolute; inset: 0; pointer-events: none; }
+.prop { position: absolute; height: auto; max-width: none; filter: drop-shadow(0 3px 0 rgba(74, 43, 43, 0.16)); animation: propIn 0.5s ease both; }
+.prop-plant { left: -3%; bottom: 14%; width: 27%; }
+.prop-bookshelf { left: 21%; bottom: 14%; width: 19%; }
+.prop-chairs { right: 24%; bottom: 13%; width: 15%; }
+.prop-tower { right: -1%; bottom: 14%; width: 24%; }
+.prop-chalkboard { right: 3%; top: 4%; width: 22%; }
+.prop-lamp { left: 43%; top: -3%; width: 16%; }
+.counter { position: absolute; left: 50%; bottom: -1%; width: 114%; max-width: none; transform: translateX(-50%); pointer-events: none; }
+.customers { position: absolute; inset: 0; pointer-events: none; }
+.cust { left: 12%; right: 0; bottom: 17%; height: 50%; }
+.cust .emote { font-size: 1.5rem; top: 4%; right: 6%; }
+.staff { left: 1%; bottom: 15%; height: 62%; }
+@keyframes propIn { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* Story backgrounds are painted: a soft vignette keeps the text box readable */
+.dlg-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
+.dlg-bg:has(img:not([hidden]))::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(70, 36, 66, 0.2), rgba(70, 36, 66, 0) 28%, rgba(70, 36, 66, 0.28));
+}
+.shop-art img { max-width: 64px; max-height: 64px; width: auto; height: auto; object-fit: contain; }
+
+/* Drink making happens at your marble counter */
+#screen-drink { background: #f1dccb url(../assets/scenes/barista-counter.webp) center top / cover no-repeat; }
+.station { background: none; }
+.steps { background: var(--cream); border-top: 3px solid var(--cocoa); margin: 0; padding: 12px 16px 8px; }
+.options { background: var(--cream); flex: 0 0 auto; }
+
+/* The title sits in front of the café */
+#screen-title {
+  background:
+    linear-gradient(180deg, rgba(251, 226, 225, 0) 0%, rgba(251, 226, 225, 0.5) 38%, rgba(255, 247, 238, 0.94) 72%),
+    url(../assets/scenes/storefront.webp) center top / cover no-repeat;
+}
+.title-sky { display: none; }
+.title-inner > .eyebrow, .title-inner > .game-title, .title-inner > .tagline { position: relative; }
+.title-head {
+  display: grid; justify-items: center; gap: 10px; padding: 18px 20px 20px; max-width: 360px;
+  background: rgba(255, 247, 238, 0.86); border: 3px solid var(--cocoa); border-radius: 20px; box-shadow: 0 5px 0 var(--cocoa);
+  backdrop-filter: blur(3px);
+}
+
+/* ---------- Drink station on your art ---------- */
+img.item { display: block; max-width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.opt-art { width: 52px; height: 52px; flex: 0 0 52px; }
+.opt-art .item { width: 52px; height: 52px; object-fit: contain; }
+.order-cup { width: 84px; flex: 0 0 84px; }
+.order-cup .item { width: 100%; }
+.served-cup { width: 20%; left: 41%; top: 36%; }
+.served-cup .item { width: 100%; filter: drop-shadow(0 4px 0 rgba(74, 43, 43, 0.2)); }
+.detail-dl .fav .item { width: 44px; }
+.station { padding-bottom: 26px; align-items: flex-end; gap: 10px; }
+.cup-stage { width: min(48vw, 210px); position: relative; display: flex; justify-content: center; align-items: flex-end; }
+.cup-hint { align-self: center; padding: 8px 14px; background: rgba(255, 247, 238, 0.9); border: 2.5px solid var(--cocoa); border-radius: 12px; font: 700 0.95rem/1.2 var(--font-display); }
+.cup-wrap { position: relative; }
+.cup-wrap.cup-mug { width: 100%; }
+.cup-wrap.cup-teacup { width: 118%; flex: 0 0 auto; }
+.cup-wrap.cup-glass { width: 58%; }
+.cup-img { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 3px rgba(74, 43, 43, 0.28)); }
+.liquid { position: absolute; pointer-events: none; clip-path: inset(calc((1 - var(--fill)) * 100%) 0 0 0); transition: clip-path 0.08s linear; }
+.liquid.bowl { border-radius: 50%; box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.16); }
+.liquid.tall { border-radius: 4px 4px 12px 12px; opacity: 0.88; }
+.topping { position: absolute; left: 50%; top: -16%; width: 40%; transform: translateX(-50%); pointer-events: none; animation: dropIn 0.25s ease both; }
+.cup-glass .topping { top: -9%; width: 74%; }
+.topping-sprinkles { width: 16%; top: 4%; }
+.pitcher { position: absolute; right: -52%; top: -72%; width: 70%; transform: rotate(-34deg); transform-origin: 15% 85%; pointer-events: none; z-index: 2; }
+.cup-glass .pitcher { right: -90%; }
+.pitcher .stream { left: -2%; top: 86%; width: 6%; height: 70%; transform: none; background: linear-gradient(180deg, var(--liquid), var(--liquid)); opacity: 0.9; border-radius: 3px; animation: stream 0.25s linear infinite; }
+.spill { position: absolute; left: 10%; right: 10%; bottom: -4%; height: 6%; background: var(--liquid); border-radius: 50%; opacity: 0.8; }
+.mise { display: flex; flex-direction: column-reverse; gap: 6px; align-self: flex-end; min-width: 52px; }
+.mise-item { width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(74, 43, 43, 0.25)); animation: dropIn 0.3s ease both; }
+@keyframes dropIn { from { opacity: 0; transform: translate(-50%, -14px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.mise-item { animation-name: miseIn; }
+@keyframes miseIn { from { opacity: 0; transform: translateY(-14px) scale(0.8); } to { opacity: 1; transform: none; } }
+.cup-glass .topping { top: -14%; width: 46%; }
+.cup-glass .pitcher { right: -22%; top: -86%; }
+.pitcher { right: -4%; top: -64%; width: 46%; }
+.cup-teacup .pitcher { right: -10%; }
+.cup-glass .pitcher { right: -26%; top: -84%; width: 70%; }

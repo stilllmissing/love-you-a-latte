@@ -21,6 +21,8 @@
   const person = (id) => charById[id] || guestById[id];
   const ingName = (step, id) => (D.ingredients[step].find((i) => i.id === id) || {}).name || '—';
   const RECIPE_KEYS = ['cup', 'base', 'milk', 'syrup', 'topping'];
+  const assetSrc = (path) => `assets/${path}.webp`;
+  const artImg = (path, cls = '') => (path ? `<img class="item ${cls}" src="${assetSrc(path)}" alt="" draggable="false">` : '');
   const withArticle = (name) => (/^[aeiou]/i.test(name) ? 'an ' : 'a ') + name;
 
   /* ---------- Save data ---------- */
@@ -55,7 +57,6 @@
 
   /* ---------- Runtime state ---------- */
   const G = { screen: 'title', returnTo: 'title', phase: 'hub', shift: null, drink: null, dlg: null, modal: null, create: null };
-  const scene = new window.Cafe.Scene($('#cafe-bg'), $('#cafe-fg'));
 
   /* ---------- Relationships ---------- */
   const aff = (id) => (save && save.affection[id]) || 0;
@@ -166,11 +167,6 @@
     return `<img class="art art-player" src="${artSrc(look.id, `bust-${playerExpr(look, expr)}`)}" alt="" draggable="false">`;
   }
   function preload(id, files) { files.forEach((f) => { new Image().src = artSrc(id, f); }); }
-  const WALK_FRAME = 'turn-6';   // side view facing left: cast enter from the right and leave to the left
-  function showWalking(el, who) {
-    const img = el && el.querySelector('.art');
-    if (img && isCast(who)) { img.src = artSrc(who, WALK_FRAME); el.querySelectorAll('.emote').forEach((e) => e.remove()); }
-  }
   const whoName = (who) => person(who).name;
 
   /* ---------- Screens ---------- */
@@ -179,12 +175,17 @@
     $$('.screen').forEach((s) => s.classList.toggle('active', s.id === 'screen-' + name));
     G.screen = name;
     document.body.dataset.screen = name;
-    if (name === 'cafe') scene.start(); else scene.stop();
     placeToasts();
     const el = $('#screen-' + name);
     el.scrollTop = 0;
     const f = el.querySelector('[data-autofocus]') || el.querySelector('.btn-primary:not([disabled])');
     if (f) requestAnimationFrame(() => f.focus({ preventScroll: true }));
+  }
+
+  /* ---------- Café scene: your painted interior, counter and décor ---------- */
+  function renderDecor() {
+    $('#decor-back').innerHTML = (save ? save.decor : []).map((id) => decorById[id])
+      .map((d) => `<img class="prop prop-${d.id}" src="assets/props/${d.art}.webp" alt="" draggable="false">`).join('');
   }
 
   /* ---------- Toasts & FX ---------- */
@@ -246,10 +247,10 @@
   /* ---------- Title ---------- */
   function renderTitle() {
     const cast = $('#title-cast');
-    cast.innerHTML = D.characters.map((c, i) => {
-      const met = isMet(c.id);
-      return `<div class="title-sprite" style="--i:${i}">${portrait(c.id, { kind: 'chibi', expr: met ? 'happy' : 'neutral', locked: !met })}</div>`;
-    }).join('');
+    // only people you've met stand in front of the café; the rest stay a surprise
+    cast.innerHTML = D.characters.filter((c) => isMet(c.id)).map((c, i) =>
+      `<div class="title-sprite" style="--i:${i}">${portrait(c.id, { kind: 'chibi', expr: 'happy' })}</div>`).join('');
+    cast.hidden = !cast.innerHTML;
     $('#btn-continue').disabled = !save;
     $('#btn-start').textContent = !save ? 'Start Day' : save.phase === 'evening' ? 'Continue Evening' : `Start Day ${save.day}`;
     $('#title-save').innerHTML = save
@@ -301,7 +302,7 @@
     persist();
     G.phase = 'hub';
     G.shift = null;
-    scene.set(save.decor, 'day');
+    renderDecor();
     const next = () => { show('cafe'); renderCafe(); };
     const ev = D.events.find((e) => e.at === 'morning' && e.day === save.day && !save.seenEvents[e.id]);
     if (ev) {
@@ -403,10 +404,9 @@
       rush: save.day === D.rush.day, helper: save.flags.staff_tasks && save.helper && isMet(save.helper) ? save.helper : null,
     };
     G.shift.customers.forEach((c) => {
-      if (isCast(c.who)) preload(c.who, ['turn-6', ...D.expressions.map((e) => `chibi-${e}`)]);
-      else preload(c.who, person(c.who).expressions.map((e) => `bust-${e}`));
+      preload(c.who, isCast(c.who) ? D.expressions.map((e) => `bust-${e}`) : person(c.who).expressions.map((e) => `bust-${e}`));
     });
-    scene.set(save.decor, 'day');
+    renderDecor();
     show('cafe');
     nextCustomer(true);
   }
@@ -422,10 +422,6 @@
       c.patience = 1;
       renderCafe('walk-in');
       Sfx.play('tap');
-      if (isCast(c.who) && !settings.reduceMotion) {
-        showWalking($('.cust'), c.who);
-        setTimeout(() => { if (current() === c && G.phase === 'arrive') renderCafe(); }, 560);
-      }
       if (c.intro && !c.introDone) {
         setTimeout(() => { if (current() === c && G.phase === 'arrive' && !c.introDone) playIntro(c); }, 800);
       }
@@ -435,8 +431,6 @@
       const el = $('.cust');
       $('#cafe-bubble').hidden = true;
       if (el && !settings.reduceMotion) {
-        const prev = G.shift.customers[G.shift.index - 1];
-        if (prev) showWalking(el, prev.who);
         el.classList.add('walk-out');
         setTimeout(go, 420);
       } else go();
@@ -503,7 +497,7 @@
 
     $('#screen-cafe').classList.toggle('is-hub', G.phase === 'hub' || !c);
     if (G.phase === 'hub' || !c) {
-      const idle = isMet('milo') ? `<div class="cust idle"><div class="cust-sprite">${posed('milo', 'chibi', 'neutral')}</div></div>` : '';
+      const idle = isMet('milo') ? `<div class="cust idle"><div class="cust-sprite">${posed('milo', 'counter', 'happy')}</div></div>` : '';
       cust.innerHTML = staffHtml() + idle;
       bubble.hidden = true;
       panel.innerHTML = hubHtml();
@@ -513,8 +507,7 @@
     const recipe = recipeById[c.drink];
     const expr = G.phase === 'served' ? c.reaction : isCast(c.who) && !isMet(c.who) ? 'blush' : 'neutral';
     const cheer = G.phase === 'served' && anim === 'react' ? (c.result.correct ? 'cheer' : 'oops') : '';
-    const body = c.guest ? posed(c.who, 'bust', expr) : posed(c.who, 'chibi', expr);
-    cust.innerHTML = staffHtml(cheer) + `<div class="cust ${c.guest ? 'guest' : ''} ${anim || ''}"><div class="cust-sprite">${body}</div></div>`;
+    cust.innerHTML = staffHtml(cheer) + `<div class="cust ${anim || ''}"><div class="cust-sprite">${posed(c.who, 'counter', expr)}</div></div>`;
 
     let line;
     if (G.phase === 'arrive') line = c.intro && !c.introDone ? '' : (c.greetLine || (c.greetLine = fill(greetLine(c))));
@@ -602,7 +595,7 @@
   function ticketHtml(c, showBlurb) {
     const recipe = recipeById[c.drink];
     return `<div class="order-card">
-      <div class="order-cup">${S.cup(recipe, 1, { steam: false })}</div>
+      <div class="order-cup">${artImg(recipe.art)}</div>
       <div class="order-info">
         <div class="order-name">${esc(recipeName(recipe.id))} <span class="order-price">${S.icons.coin}${recipe.price}</span></div>
         ${c.side ? `<div class="order-side">+ ${esc(c.side.name)} <span>${S.icons.coin}${c.side.price}</span></div>` : ''}
@@ -680,15 +673,10 @@
       opts.innerHTML = `<p class="opt-title">Choose ${stepId === 'cup' ? 'a cup' : stepId === 'base' ? 'a base' : 'the ' + stepId}</p>
         <div class="opt-grid">${list.map((o, i) => `
           <button class="opt ${d.sel[stepId] === o.id ? 'picked' : ''}" data-action="pick" data-id="${o.id}" aria-pressed="${d.sel[stepId] === o.id}">
-            <span class="opt-art">${stepId === 'cup' ? S.cup({ cup: o.id }, 0, { steam: false }) : swatch(o)}</span>
+            <span class="opt-art">${artImg(o.art)}</span>
             <span class="opt-name">${esc(o.name)}</span><kbd class="opt-key">${i + 1}</kbd>
           </button>`).join('')}</div>`;
     }
-  }
-
-  function swatch(o) {
-    if (!o.color) return '<span class="swatch none" aria-hidden="true"></span>';
-    return `<span class="swatch" style="--sw:${o.color}" aria-hidden="true"></span>`;
   }
 
   function firstOpenStep() {
@@ -696,11 +684,52 @@
     return i === -1 ? 5 : i;
   }
 
+  /* Your cups, with the drink rising inside. Bowl-shaped cups (mug, teacup) fill the
+   * ellipse of their opening; the glass fills its inner rectangle in layers. Geometry is
+   * in percent of the cup image. */
+  const CUP_GEOM = {
+    mug: { open: [8, 5, 62, 30] },
+    teacup: { open: [17, 6, 62, 34] },
+    glass: { inner: [14, 16, 72, 74] },
+  };
+  const ingr = (step, id) => D.ingredients[step].find((i) => i.id === id);
+  function liquidColors(sel) {
+    const base = ingr('base', sel.base), milk = ingr('milk', sel.milk), syrup = ingr('syrup', sel.syrup);
+    if (!base) return null;
+    const mixed = milk && milk.color ? S.mix(base.color, milk.color, 0.5) : base.color;
+    return {
+      mixed: syrup && syrup.color ? S.mix(mixed, syrup.color, 0.2) : mixed,
+      base: base.color, milk: milk && milk.color, syrup: syrup && syrup.color,
+    };
+  }
   function renderCup() {
     const d = G.drink;
-    const shown = Math.max(d.level, d.sel.base ? 0.18 : 0);
-    $('#cup-stage').innerHTML = S.cup(d.sel, shown, { cls: d.pouring ? 'pouring' : '' }) +
-      (d.pouring ? '<div class="stream" aria-hidden="true"></div>' : '');
+    const stage = $('#cup-stage');
+    const cup = D.ingredients.cup.find((x) => x.id === d.sel.cup);
+    if (!cup) { stage.innerHTML = '<p class="cup-hint">Pick a cup to start</p>'; $('#mise').innerHTML = ''; return; }
+    const g = CUP_GEOM[cup.id];
+    const col = liquidColors(d.sel);
+    const fill = clamp(Math.max(d.level, d.sel.base ? 0.12 : 0), 0, 1);
+    let liquid = '';
+    if (col && g.open) {
+      const [l, t, w, h] = g.open;
+      liquid = `<span class="liquid bowl" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%;background:${col.mixed};--fill:${fill}"></span>`;
+    } else if (col && g.inner) {
+      const [l, t, w, h] = g.inner;
+      const layers = [col.syrup && `${col.syrup} 0 20%`, col.milk && `${col.milk} 20% 66%`].filter(Boolean);
+      const stops = layers.length ? layers.join(',') + `,${col.base} ${layers.length ? '66%' : '0'} 100%` : `${col.base} 0 100%`;
+      liquid = `<span class="liquid tall" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%;background:linear-gradient(to top,${stops});--fill:${fill}"></span>`;
+    }
+    const top = ingr('topping', d.sel.topping);
+    const topping = top && top.id !== 'none' && fill > 0.3 ? artImg(top.art, `topping topping-${top.id}`) : '';
+    stage.innerHTML = `<div class="cup-wrap cup-${cup.id}" style="--liquid:${col ? col.mixed : 'transparent'}">
+        <img class="cup-img" src="${assetSrc(cup.art)}" alt="" draggable="false">${liquid}${topping}
+        ${d.pouring ? `<div class="pitcher" aria-hidden="true">${artImg('items/tool-pitcher')}<span class="stream"></span></div>` : ''}
+        ${d.level > 1 ? '<span class="spill" aria-hidden="true"></span>' : ''}
+      </div>`;
+    // what you've added so far, laid out beside the cup
+    $('#mise').innerHTML = ['base', 'milk', 'syrup', 'topping']
+      .map((k) => ingr(k, d.sel[k])).filter((i) => i && i.id !== 'none').map((i) => artImg(i.art, 'mise-item')).join('');
     $('#gauge-fill').style.height = clamp(d.level / 1.15, 0, 1) * 100 + '%';
   }
 
@@ -814,7 +843,9 @@
     const fx = $('#cafe-fx');
     const cupEl = document.createElement('div');
     cupEl.className = 'served-cup';
-    cupEl.innerHTML = S.cup(c.result.sel, Math.min(c.result.level, 1), {});
+    // a correct order is the finished drink; a wrong one is just the cup you made
+    const cupArt = correct ? recipe.art : (D.ingredients.cup.find((x) => x.id === c.result.sel.cup) || {}).art;
+    cupEl.innerHTML = artImg(cupArt);
     fx.appendChild(cupEl);
     setTimeout(() => cupEl.remove(), 2600);
     if (correct) {
@@ -948,7 +979,7 @@
       : 'The café has become the place everyone wants to come back to.';
     // show the café under the end card; the next morning's scenes wait until you've closed it
     G.phase = 'hub'; G.shift = null;
-    scene.set(save.decor, 'day');
+    renderDecor();
     show('cafe'); renderCafe();
     openModal(`
       <p class="eyebrow">Thirty days on Bellflower Lane</p>
@@ -968,12 +999,14 @@
 
   /* ---------- Dialogue ---------- */
   const TEXT_SPEED = { slow: 42, normal: 22, instant: 0 };
-  const CAFE_BGS = { 'cafe-day': 'day', 'cafe-night': 'night', morning: 'day' };   // morning scenes happen at the café
+  /* Painted backgrounds for the story; other settings (dusk, stars) are gradients. */
+  const SCENE_ART = { 'cafe-day': 'interior-day', 'cafe-night': 'interior-night', morning: 'storefront' };
 
   function setSceneBg(bg) {
     $('#dlg-bg').className = 'dlg-bg bg-' + bg;
-    const cv = $('#dlg-canvas');
-    if (CAFE_BGS[bg]) { cv.hidden = false; window.Cafe.still(cv, save.decor, CAFE_BGS[bg]); } else cv.hidden = true;
+    const img = $('#dlg-img');
+    img.hidden = !SCENE_ART[bg];
+    if (SCENE_ART[bg]) img.src = `assets/scenes/${SCENE_ART[bg]}.webp`;
   }
 
   function playScene(id, onEnd) {
@@ -1198,7 +1231,7 @@
       <p class="detail-title">Regular of Bellflower Lane</p>
       <p>${esc(g.blurb)}</p>
       <dl class="detail-dl">
-        <div><dt>Favorite</dt><dd class="fav">${S.cup(recipeById[g.favorite], 1, { steam: false })}<span>${esc(recipeName(g.favorite))}</span></dd></div>
+        <div><dt>Favorite</dt><dd class="fav">${artImg(recipeById[g.favorite].art)}<span>${esc(recipeName(g.favorite))}</span></dd></div>
         <div><dt>Story</dt><dd>${Math.min(st.beat, total)} of ${total} chapters${guestDone(id) ? ' · complete' : ''}</dd></div>
       </dl>
       ${heard.length ? `<blockquote class="quote">“${esc(fill(heard[heard.length - 1].text))}”</blockquote>` : ''}
@@ -1248,7 +1281,7 @@
       <p>${esc(c.personality)}</p>
       <p class="detail-note">${esc(c.detail)}</p>
       <dl class="detail-dl">
-        <div><dt>Favorite order</dt><dd class="fav">${S.cup(fav, 1, { steam: false })}<span>${esc(recipeName(fav.id))}</span></dd></div>
+        <div><dt>Favorite order</dt><dd class="fav">${artImg(fav.art)}<span>${esc(recipeName(fav.id))}</span></dd></div>
         <div><dt>Story</dt><dd>${seen} of ${route.length} evenings seen</dd></div>
       </dl>
       <div class="detail-aff">${S.icons.heart}<div class="meter"><span style="--to:${a}%"></span></div><span>${a}/100</span></div>
@@ -1269,13 +1302,12 @@
       const owned = save.decor.includes(d.id);
       const can = save.coins >= d.price;
       return `<article class="shop-item ${owned ? 'owned' : ''}">
-        <div class="shop-art"><canvas data-preview="${d.id}" aria-hidden="true"></canvas></div>
+        <div class="shop-art" data-preview="${d.id}"><img src="assets/props/${d.art}.webp" alt="" draggable="false"></div>
         <div class="shop-info"><h3>${esc(d.name)}</h3><p>${esc(d.desc)}</p><span class="tag">+${Math.round(d.bonus * 100)}% tips</span></div>
         <button class="btn ${owned ? '' : can ? 'btn-primary' : ''} shop-buy" data-action="buy" data-id="${d.id}" ${owned || !can ? 'disabled' : ''}>
           ${owned ? 'Placed ✓' : can ? `Buy ${S.icons.coin}${d.price}` : `${S.icons.coin}${d.price}<small>need ${d.price - save.coins}</small>`}
         </button></article>`;
     }).join('');
-    $$('canvas[data-preview]').forEach((cv) => window.Cafe.preview(cv, cv.dataset.preview));
   }
 
   function buy(id) {
@@ -1286,7 +1318,7 @@
     persist();
     Sfx.play('coin');
     toast(`${d.name} placed in the café!`, 'coin');
-    scene.set(save.decor, 'day');
+    renderDecor();
     renderShop();
     const btn = $(`[data-preview="${id}"]`);
     if (btn) { const item = btn.closest('.shop-item'); item.classList.add('bought'); }
