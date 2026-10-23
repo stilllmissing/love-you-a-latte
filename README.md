@@ -126,6 +126,8 @@ The game plays recorded audio if you put files in `assets/audio/` (the folder is
 | `mystery` | Rain Check and other eerie scenes |
 | `romance` | Confessions and endings |
 | `dream` | Dream or hidden-route scenes |
-| `bell`, `pour-coffee`, `pour-milk`, `whisk` | Sound effects (only `bell` is wired so far: shift start) |
+| `ambience` | Café background loop during shifts and drink-making |
+| `bell` | A customer walks in |
+| `pour-coffee`, `whisk`, `pour-milk` | Held while pouring an espresso, matcha or any other base |
 
 A scene can pick its own track with `mood: 'romance'`.

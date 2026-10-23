@@ -979,3 +979,11 @@ img.icon.i-empty { opacity: 0.85; }
 .title-save:not(:empty), .fineprint { background: rgba(255, 247, 238, 0.88); padding: 4px 12px; border-radius: 10px; }
 .title-head .eyebrow { letter-spacing: 0.08em; font-size: 0.7rem; white-space: nowrap; }
 .btn-hold { min-height: 72px; }
+
+/* ---------- Staged drink art ---------- */
+.cup-wrap { width: auto; display: flex; justify-content: center; align-items: flex-end; }
+.cup-wrap .cup-img { width: auto; max-width: none; height: auto; filter: drop-shadow(0 6px 3px rgba(74, 43, 43, 0.28)); image-rendering: pixelated; }
+.pour-stream { position: absolute; left: 50%; bottom: 30%; transform: translateX(-50%); height: 70%; width: auto; pointer-events: none; image-rendering: pixelated; }
+.pitcher { right: auto; left: 46%; top: -62%; width: 50%; transform: rotate(-30deg); transform-origin: 20% 80%; }
+.spill-fx { position: absolute; left: 50%; bottom: -8%; width: 120%; transform: translateX(-50%); pointer-events: none; image-rendering: pixelated; animation: dropIn 0.2s ease both; }
+.spill-fx { width: 70%; bottom: -2%; }

@@ -172,7 +172,7 @@
   /* ---------- Screens ---------- */
   function moodFor(name) {
     if (name === 'drink') return 'busy';
-    if (name === 'cafe') return (G.shift && G.phase !== 'hub') ? 'busy' : 'light';
+    if (name === 'cafe') return (G.shift && save.phase === 'shift') ? 'busy' : 'light';
     if (name === 'dialogue') {
       const d = G.dlg;
       if (d && d.sc.mood) return d.sc.mood;
@@ -192,6 +192,7 @@
     G.screen = name;
     document.body.dataset.screen = name;
     if (name !== 'gallery' && name !== 'shop') Sfx.music(moodFor(name));
+    Sfx.ambience(name === 'cafe' || name === 'drink');
     placeToasts();
     const el = $('#screen-' + name);
     el.scrollTop = 0;
@@ -414,7 +415,6 @@
   };
 
   function beginShift() {
-    Sfx.file('bell');
     save.phase = 'shift';
     persist();
     G.shift = {
@@ -436,6 +436,7 @@
       G.advancing = false;
       if (G.shift.index >= G.shift.customers.length) { endShift(); return; }
       G.phase = 'arrive';
+      Sfx.file('bell', 0.5);
       const c = current();
       c.patience = 1;
       renderCafe('walk-in');
@@ -705,45 +706,42 @@
   /* Your cups, with the drink rising inside. Bowl-shaped cups (mug, teacup) fill the
    * ellipse of their opening; the glass fills its inner rectangle in layers. Geometry is
    * in percent of the cup image. */
-  const CUP_GEOM = {
-    mug: { open: [8, 5, 62, 30] },
-    teacup: { open: [17, 6, 62, 34] },
-    glass: { inner: [14, 16, 72, 74] },
-  };
+  /* The cup fills through your staged drink art: empty, three stages, finished. */
   const ingr = (step, id) => D.ingredients[step].find((i) => i.id === id);
-  function liquidColors(sel) {
-    const base = ingr('base', sel.base), milk = ingr('milk', sel.milk), syrup = ingr('syrup', sel.syrup);
-    if (!base) return null;
-    const mixed = milk && milk.color ? S.mix(base.color, milk.color, 0.5) : base.color;
-    return {
-      mixed: syrup && syrup.color ? S.mix(mixed, syrup.color, 0.2) : mixed,
-      base: base.color, milk: milk && milk.color, syrup: syrup && syrup.color,
-    };
+  function stageSet(sel) {
+    if (sel.cup === 'glass') return sel.base === 'matcha' ? 'a-glass-berry' : 'a-glass-iced';
+    if (sel.cup === 'teacup') return 'a-tea-lavender';
+    return sel.base === 'matcha' ? 'a-mug-matcha' : 'a-mug-latte';
   }
+  const streamFor = (set, sel) => (set === 'a-glass-berry' ? 'stream-berry' : set === 'a-glass-iced' ? 'stream-coffee'
+    : set === 'a-mug-latte' ? 'stream-coffee' : 'stream-milk');
+  function stageFrame(level) {
+    const pf = perfectFrom();
+    if (level >= pf) return 4;
+    if (level >= pf * 0.7) return 3;
+    if (level >= pf * 0.35) return 2;
+    return level >= 0.06 ? 1 : 0;
+  }
+  const stepImg = (name, cls) => {
+    const dim = (window.ART_DIMS || {})[name];
+    const w = dim ? `style="width:${Math.round(dim[0] / 1.7)}px"` : '';
+    return `<img class="${cls}" ${w} src="${assetSrc('steps/' + name)}" alt="" draggable="false">`;
+  };
   function renderCup() {
     const d = G.drink;
     const stage = $('#cup-stage');
     const cup = D.ingredients.cup.find((x) => x.id === d.sel.cup);
     if (!cup) { stage.innerHTML = '<p class="cup-hint">Pick a cup to start</p>'; $('#mise').innerHTML = ''; return; }
-    const g = CUP_GEOM[cup.id];
-    const col = liquidColors(d.sel);
-    const fill = clamp(Math.max(d.level, d.sel.base ? 0.12 : 0), 0, 1);
-    let liquid = '';
-    if (col && g.open) {
-      const [l, t, w, h] = g.open;
-      liquid = `<span class="liquid bowl" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%;background:${col.mixed};--fill:${fill}"></span>`;
-    } else if (col && g.inner) {
-      const [l, t, w, h] = g.inner;
-      const layers = [col.syrup && `${col.syrup} 0 20%`, col.milk && `${col.milk} 20% 66%`].filter(Boolean);
-      const stops = layers.length ? layers.join(',') + `,${col.base} ${layers.length ? '66%' : '0'} 100%` : `${col.base} 0 100%`;
-      liquid = `<span class="liquid tall" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%;background:linear-gradient(to top,${stops});--fill:${fill}"></span>`;
-    }
-    const top = ingr('topping', d.sel.topping);
-    const topping = top && top.id !== 'none' && fill > 0.3 ? artImg(top.art, `topping topping-${top.id}`) : '';
-    stage.innerHTML = `<div class="cup-wrap cup-${cup.id}" style="--liquid:${col ? col.mixed : 'transparent'}">
-        <img class="cup-img" src="${assetSrc(cup.art)}" alt="" draggable="false">${liquid}${topping}
-        ${d.pouring ? `<div class="pitcher" aria-hidden="true">${artImg('items/tool-pitcher')}<span class="stream"></span></div>` : ''}
-        ${d.level > 1 ? '<span class="spill" aria-hidden="true"></span>' : ''}
+    const set = stageSet(d.sel);
+    const frame = d.sel.base ? stageFrame(d.level) : 0;
+    const spill = d.level > 1.0;
+    const stream = streamFor(set, d.sel);
+    const sf = 1 + (Math.floor(performance.now() / 110) % 3);
+    stage.innerHTML = `<div class="cup-wrap cup-${cup.id}">
+        ${stepImg(`${set}-${frame}`, 'cup-img')}
+        ${d.pouring && !spill ? `<div class="pitcher" aria-hidden="true">${artImg('items/tool-pitcher')}</div>
+          <img class="pour-stream" src="${assetSrc(`fx/${stream}-${sf}`)}" alt="" draggable="false">` : ''}
+        ${spill ? `<img class="spill-fx" src="${assetSrc('fx/splash-' + (set.includes('matcha') || set.includes('berry') ? 'milk' : 'coffee') + '-3')}" alt="" draggable="false">` : ''}
       </div>`;
     // what you've added so far, laid out beside the cup
     $('#mise').innerHTML = ['base', 'milk', 'syrup', 'topping']
@@ -785,12 +783,14 @@
     if (!d || d.pouring || D.steps[d.step].id !== 'pour') return;
     if (!RECIPE_KEYS.every((k) => d.sel[k] !== undefined)) return;
     d.pouring = true;
+    Sfx.hold(d.sel.base === 'matcha' ? 'whisk' : d.sel.base === 'espresso' ? 'pour-coffee' : 'pour-milk');
     const b = $('#hold-pour'); if (b) b.classList.add('holding');
   }
   function stopPour() {
     const d = G.drink;
     if (!d || !d.pouring) return;
     d.pouring = false;
+    Sfx.release();
     d.pouredOnce = true;
     const b = $('#hold-pour'); if (b) b.classList.remove('holding');
     const h = $('#pour-hint'); if (h) h.textContent = pourLabel(d.level);
@@ -1629,8 +1629,6 @@
     if (d && d.pouring) {
       d.level = Math.min(1.15, d.level + dt * D.economy.pourRate);
       renderCup();
-      pourSfx += dt;
-      if (pourSfx > 0.09) { pourSfx = 0; Sfx.play('pour'); }
       if (d.level >= 1.15) stopPour();
     }
     requestAnimationFrame(tick);

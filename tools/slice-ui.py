@@ -55,6 +55,7 @@ SHEETS = {
     'frames': ('ui-frames.png', 10, [
         'ticket-a', 'ticket-b', 'ticket-done', 'namecard-cream', 'namecard-lavender', 'namecard-red',
         'catframe-pink', 'catframe-lavender', 'catframe-locked', 'ticket-cup', 'hourglass', 'tray-cup']),
+    'shop': ('ui-shop-cards.png', 10, [f'{d}-{k}' for k in ('normal', 'selected', 'owned', 'locked') for d in ('armchair', 'table', 'tower', 'espresso')]),
     'settings': ('ui-settings.png', 10, [
         'toggle-off', 'toggle-on', 'toggle-off-focus', 'toggle-on-focus',
         'slider-0', 'slider-1', 'slider-2', 'slider-3',
